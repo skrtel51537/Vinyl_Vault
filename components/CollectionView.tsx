@@ -4,8 +4,7 @@ import { db } from '../services/db';
 import VinylCard from './VinylCard';
 import VinylDetailModal from './VinylDetailModal';
 import { FilterState, VinylRecord } from '../types';
-import { exportCollectionToExcel } from '../services/excelService';
-import { Search, Filter, Music, Download, Disc, ArrowUpDown, Check, ImagePlus, Loader2 } from 'lucide-react';
+import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2 } from 'lucide-react';
 import { findAlbumCover } from '../services/itunesService';
 
 type SortOption =
@@ -190,11 +189,7 @@ const CollectionView: React.FC = () => {
         }
     };
 
-    const handleExport = () => {
-        if (allVinyls) {
-            exportCollectionToExcel(allVinyls);
-        }
-    };
+
 
     const activeInputClass = "bg-[#78350f] text-white border-[#78350f]";
     const inactiveInputClass = "bg-white border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-[#78350f]";
@@ -263,13 +258,7 @@ const CollectionView: React.FC = () => {
                     >
                         <Filter className="w-5 h-5" />
                     </button>
-                    <button
-                        onClick={handleExport}
-                        className={`p-3 rounded border transition-all ${inactiveInputClass}`}
-                        title="Export to Excel"
-                    >
-                        <Download className="w-5 h-5" />
-                    </button>
+
 
                     <button
                         onClick={scanCollection}

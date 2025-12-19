@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from 'react';
-import { Upload, FileSpreadsheet, Loader2, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
+import React, { useCallback, useState, useRef } from 'react';
+import { Upload, FileSpreadsheet, Loader2, AlertCircle, Trash2, ArrowLeft, Download, UploadCloud } from 'lucide-react';
 import { parseExcelFile } from '../services/excelService';
 import { db, resetDatabase } from '../services/db';
 import { VinylRecord } from '../types';
+import { exportFullBackup, importFullBackup } from '../services/backupService';
 
 interface ImportViewProps {
   onImportComplete: () => void;
@@ -13,6 +14,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
 
   // ... (existing processFile, onDrop, onDragOver, onDragLeave, handleFileInput, handleReset logic remains unchanged) ...
 
@@ -99,6 +101,41 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
     }
   };
 
+  const handleFullBackup = async () => {
+    setIsProcessing(true);
+    try {
+      await exportFullBackup();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to create backup.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRestoreBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const success = await importFullBackup(file);
+      if (success) {
+        onImportComplete();
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to restore backup.');
+    } finally {
+      setIsProcessing(false);
+      // Reset the input so the same file can be selected again
+      if (backupInputRef.current) {
+        backupInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-[calc(100vh-100px)] p-6 relative">
 
@@ -175,6 +212,45 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         <div className="text-left text-xs text-stone-500 bg-stone-50 p-4 rounded border border-stone-200 font-mono leading-relaxed">
           <p className="font-bold mb-2 text-stone-700 uppercase tracking-wide">Required Columns (Row 2):</p>
           <p>Artist, Album, Genre, Collection, Release Year, Country, Label, Cat. Number, Condition Sleeve, Condition Media, Sound Quality, Rating, Best tracks, Others/Comments, Discogs link, To be sold</p>
+        </div>
+
+        {/* Separator */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-stone-300"></div>
+          <span className="text-stone-400 text-sm font-medium">Complete Database Backup</span>
+          <div className="flex-1 h-px bg-stone-300"></div>
+        </div>
+
+        {/* Backup/Restore Section */}
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+          <p className="text-sm text-stone-600 mb-4">
+            Create a complete backup including all metadata <strong>and cover images</strong>. Use this to safely transfer your collection or protect against data loss.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={handleFullBackup}
+              disabled={isProcessing}
+              className="flex items-center gap-2 px-5 py-2.5 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-5 h-5" />
+              Full Backup
+            </button>
+            <label className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-stone-50 text-amber-800 font-bold rounded-lg shadow-md border border-amber-300 transition-all cursor-pointer">
+              <UploadCloud className="w-5 h-5" />
+              Restore Backup
+              <input
+                ref={backupInputRef}
+                type="file"
+                className="hidden"
+                accept=".json"
+                onChange={handleRestoreBackup}
+                disabled={isProcessing}
+              />
+            </label>
+          </div>
+          <p className="text-xs text-stone-500 mt-3">
+            Full Backup exports: Excel (.xlsx) + JSON with covers (.json)
+          </p>
         </div>
       </div>
     </div>
