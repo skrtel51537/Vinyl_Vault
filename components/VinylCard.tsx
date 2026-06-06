@@ -3,6 +3,7 @@ import { VinylRecord } from '../types';
 import { Disc, ExternalLink, Star, DollarSign, ImagePlus, Loader2, Volume2 } from 'lucide-react';
 import { db } from '../services/db';
 import { findAlbumCover } from '../services/itunesService';
+import { sanitizeExternalLink } from '../services/url';
 
 interface VinylCardProps {
   record: VinylRecord;
@@ -109,9 +110,9 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
             {record.releaseYear} • {record.country !== '-' ? record.country : 'Unk'}
           </span>
 
-          {record.discogsLink && (
+          {sanitizeExternalLink(record.discogsLink) && (
             <a
-              href={record.discogsLink}
+              href={sanitizeExternalLink(record.discogsLink)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-stone-400 hover:text-amber-600 transition-colors bg-stone-50 p-1 rounded-full"

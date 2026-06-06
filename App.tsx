@@ -6,8 +6,6 @@ import CollectionView from './components/CollectionView';
 import AddVinylForm from './components/AddVinylForm';
 import HomeView from './components/HomeView';
 import AnalyticsView from './components/AnalyticsView';
-import UpdateNotifier from './components/UpdateNotifier';
-
 import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2 } from 'lucide-react';
 
 type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics';
@@ -131,7 +129,6 @@ const App: React.FC = () => {
           </>
         )}
       </div>
-      <UpdateNotifier />
     </div>
   );
 };
