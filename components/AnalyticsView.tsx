@@ -29,7 +29,6 @@ const AnalyticsView: React.FC = () => {
         const genreMap = new Map<string, number>();
         allVinyls.forEach(v => {
             v.genre.forEach(g => {
-                if (g === 'Rock') return; // Exclude Rock as it is too generic/dominant
                 genreMap.set(g, (genreMap.get(g) || 0) + 1);
             });
         });
@@ -124,7 +123,6 @@ const AnalyticsView: React.FC = () => {
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Music className="w-5 h-5 text-amber-600" />
                             Musical DNA
-                            <span className="text-xs font-normal text-stone-400 ml-2">(Rock excluded)</span>
                         </h2>
                     </div>
                     <div className="h-64 flex">
