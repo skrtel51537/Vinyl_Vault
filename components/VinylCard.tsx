@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VinylRecord } from '../types';
 import { Disc, ExternalLink, Star, DollarSign, ImagePlus, Loader2, Volume2 } from 'lucide-react';
 import { db } from '../services/db';
 import { findAlbumCover } from '../services/itunesService';
 import { sanitizeExternalLink } from '../services/url';
+import { extractDominantColor } from '../services/color';
 
 interface VinylCardProps {
   record: VinylRecord;
@@ -13,6 +14,19 @@ interface VinylCardProps {
 const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
   const [loadingImage, setLoadingImage] = useState(false);
   const [imgError, setImgError] = useState(false);
+
+  // Lazily compute and persist the dominant cover color (backfills existing records).
+  useEffect(() => {
+    let cancelled = false;
+    if (record.coverUrl && !record.dominantColor && record.id !== undefined) {
+      extractDominantColor(record.coverUrl).then(color => {
+        if (!cancelled && color) {
+          db.vinyls.update(record.id!, { dominantColor: color });
+        }
+      });
+    }
+    return () => { cancelled = true; };
+  }, [record.coverUrl, record.dominantColor, record.id]);
 
   const fetchCover = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -89,6 +103,12 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
           </div>
         )}
       </div>
+
+      {/* Dominant-color accent strip (record label spine) */}
+      <div
+        className="h-1.5 w-full shrink-0"
+        style={{ backgroundColor: record.dominantColor || '#78350f' }}
+      />
 
       {/* Details Area - Looks like the back or label */}
       <div className="p-4 flex flex-col flex-grow relative bg-white">
