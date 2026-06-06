@@ -77,7 +77,7 @@ const HomeView: React.FC<HomeViewProps> = ({ vinylCount, onEnter, onImport }) =>
             </div>
 
             <footer className="absolute bottom-6 text-stone-400 text-xs font-mono">
-                v1.1.1 • Local Storage • No Cloud
+                v1.2.0 • Local Storage • No Cloud
             </footer>
         </div>
     );

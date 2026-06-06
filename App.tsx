@@ -84,14 +84,14 @@ const App: React.FC = () => {
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'collection' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
-                    Collection
+                    <span className="hidden sm:inline">Collection</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('analytics')}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'analytics' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <BarChart2 className="w-4 h-4" />
-                    Analytics
+                    <span className="hidden sm:inline">Analytics</span>
                   </button>
 
                   <button
@@ -99,7 +99,7 @@ const App: React.FC = () => {
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <PlusCircle className="w-4 h-4" />
-                    Add Record
+                    <span className="hidden sm:inline">Add Record</span>
                   </button>
 
                   <div className="h-6 w-px bg-amber-800 mx-1"></div>
@@ -110,7 +110,7 @@ const App: React.FC = () => {
                     title="Exit to Import Screen"
                   >
                     <LogOut className="w-4 h-4" />
-                    Exit
+                    <span className="hidden sm:inline">Exit</span>
                   </button>
                 </nav>
               </div>

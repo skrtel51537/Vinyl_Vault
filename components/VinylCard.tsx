@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VinylRecord } from '../types';
 import { Disc, ExternalLink, Star, DollarSign, ImagePlus, Loader2, Volume2 } from 'lucide-react';
 import { db } from '../services/db';
 import { findAlbumCover } from '../services/itunesService';
 import { sanitizeExternalLink } from '../services/url';
+import { extractDominantColor } from '../services/color';
 
 interface VinylCardProps {
   record: VinylRecord;
@@ -12,6 +13,20 @@ interface VinylCardProps {
 
 const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
   const [loadingImage, setLoadingImage] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // Lazily compute and persist the dominant cover color (backfills existing records).
+  useEffect(() => {
+    let cancelled = false;
+    if (record.coverUrl && !record.dominantColor && record.id !== undefined) {
+      extractDominantColor(record.coverUrl).then(color => {
+        if (!cancelled && color) {
+          db.vinyls.update(record.id!, { dominantColor: color });
+        }
+      });
+    }
+    return () => { cancelled = true; };
+  }, [record.coverUrl, record.dominantColor, record.id]);
 
   const fetchCover = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -42,15 +57,12 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
       {/* Cover Image Area */}
       <div className="relative aspect-square w-full bg-stone-100 overflow-hidden">
-        {record.coverUrl ? (
+        {record.coverUrl && !imgError ? (
           <img
             src={record.coverUrl}
             alt={`${record.album} cover`}
             className="w-full h-full object-cover grayscale-[10%] group-hover:grayscale-0 transition-all duration-700 block"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://picsum.photos/400/400?grayscale&blur=2';
-              (e.target as HTMLImageElement).style.opacity = '0.3';
-            }}
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 bg-stone-50">
@@ -91,6 +103,12 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
           </div>
         )}
       </div>
+
+      {/* Dominant-color accent strip (record label spine) */}
+      <div
+        className="h-1.5 w-full shrink-0"
+        style={{ backgroundColor: record.dominantColor || '#78350f' }}
+      />
 
       {/* Details Area - Looks like the back or label */}
       <div className="p-4 flex flex-col flex-grow relative bg-white">
