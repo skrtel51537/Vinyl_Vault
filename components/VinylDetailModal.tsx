@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { VinylRecord } from '../types';
 import { X, Disc, Music, Calendar, Globe, Tag, DollarSign, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2 } from 'lucide-react';
 import { db, deleteVinylById } from '../services/db';
+import { sanitizeExternalLink } from '../services/url';
 import AddVinylForm from './AddVinylForm';
 
 interface VinylDetailModalProps {
@@ -143,10 +144,10 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                         </div>
                     </div>
 
-                    {record.discogsLink && (
-                        <a 
-                        href={record.discogsLink} 
-                        target="_blank" 
+                    {sanitizeExternalLink(record.discogsLink) && (
+                        <a
+                        href={sanitizeExternalLink(record.discogsLink)}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-2 w-full py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-sm rounded transition-colors uppercase tracking-wide"
                         >
