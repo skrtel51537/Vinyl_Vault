@@ -1,0 +1,34 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Ejecución automática cada lunes a las 8:00 UTC
+    - cron: '0 8 * * 1'
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        # Falla el workflow ante vulnerabilidades de severidad HIGH o CRITICAL.
+        # El aviso de 'xlsx' (high, sin fix disponible) se documenta como excepción
+        # aceptada hasta que se migre la dependencia en un release dedicado.
+        run: npm audit --audit-level=high
