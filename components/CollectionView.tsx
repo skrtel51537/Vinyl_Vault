@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import VinylCard from './VinylCard';
+import VinylTable from './VinylTable';
 import VinylDetailModal from './VinylDetailModal';
-import { FilterState, VinylRecord } from '../types';
-import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2 } from 'lucide-react';
+import { FilterState, VinylRecord, ViewMode } from '../types';
+import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2, LayoutGrid, List } from 'lucide-react';
 import { findAlbumCover } from '../services/itunesService';
 
 type SortOption =
@@ -32,6 +33,14 @@ const CollectionView: React.FC = () => {
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [sortOption, setSortOption] = useState<SortOption>('added_desc');
     const [selectedRecord, setSelectedRecord] = useState<VinylRecord | null>(null);
+    const [viewMode, setViewMode] = useState<ViewMode>(() =>
+        localStorage.getItem('vinyl-vault-view') === ViewMode.TABLE ? ViewMode.TABLE : ViewMode.GRID
+    );
+
+    const changeView = (mode: ViewMode) => {
+        setViewMode(mode);
+        localStorage.setItem('vinyl-vault-view', mode);
+    };
 
     const [filters, setFilters] = useState<FilterState>({
         search: '',
@@ -271,6 +280,24 @@ const CollectionView: React.FC = () => {
                     >
                         {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
                     </button>
+
+                    {/* View toggle: Grid / Table */}
+                    <div className="flex rounded border border-stone-300 overflow-hidden shrink-0">
+                        <button
+                            onClick={() => changeView(ViewMode.GRID)}
+                            className={`p-3 transition-all ${viewMode === ViewMode.GRID ? activeInputClass : inactiveInputClass}`}
+                            title="Grid view"
+                        >
+                            <LayoutGrid className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => changeView(ViewMode.TABLE)}
+                            className={`p-3 transition-all ${viewMode === ViewMode.TABLE ? activeInputClass : inactiveInputClass}`}
+                            title="Table view"
+                        >
+                            <List className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -404,17 +431,26 @@ const CollectionView: React.FC = () => {
                 </div>
             )}
 
-            {/* Grid - The Shelf */}
+            {/* The Shelf - Grid or Table */}
             {processedVinyls.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 pb-12">
-                    {processedVinyls.map((record) => (
-                        <VinylCard
-                            key={record.id}
-                            record={record}
-                            onClick={() => setSelectedRecord(record)}
+                viewMode === ViewMode.TABLE ? (
+                    <div className="pb-12">
+                        <VinylTable
+                            records={processedVinyls}
+                            onRowClick={(record) => setSelectedRecord(record)}
                         />
-                    ))}
-                </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 pb-12">
+                        {processedVinyls.map((record) => (
+                            <VinylCard
+                                key={record.id}
+                                record={record}
+                                onClick={() => setSelectedRecord(record)}
+                            />
+                        ))}
+                    </div>
+                )
             ) : (
                 <div className="flex flex-col items-center justify-center py-24 text-stone-400">
                     <Disc className="w-20 h-20 mb-4 opacity-10 text-stone-900" />
