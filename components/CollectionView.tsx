@@ -91,7 +91,10 @@ const CollectionView: React.FC = () => {
             const matchesSearch =
                 String(record.album || '').toLowerCase().includes(searchLower) ||
                 String(record.artist || '').toLowerCase().includes(searchLower) ||
-                record.label.some(l => String(l).toLowerCase().includes(searchLower));
+                record.label.some(l => String(l).toLowerCase().includes(searchLower)) ||
+                record.genre.some(g => String(g).toLowerCase().includes(searchLower)) ||
+                String(record.releaseYear || '').includes(searchLower) ||
+                record.bestTracks.some(t => String(t).toLowerCase().includes(searchLower));
 
             const matchesGenre = filters.genre ? record.genre.includes(filters.genre) : true;
             const matchesArtist = filters.artist ? record.artist === filters.artist : true;
@@ -216,7 +219,7 @@ const CollectionView: React.FC = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 group-focus-within:text-[#78350f] transition-colors" />
                         <input
                             type="text"
-                            placeholder="Find in crate (artist, album...)"
+                            placeholder="Find in crate (artist, album, genre, year, track...)"
                             className="w-full bg-stone-50 border border-stone-300 text-stone-800 pl-10 pr-4 py-3 rounded focus:outline-none focus:border-[#78350f] focus:ring-1 focus:ring-[#78350f]/20 transition-all placeholder-stone-400 text-sm font-medium"
                             value={filters.search}
                             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
