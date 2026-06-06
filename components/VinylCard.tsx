@@ -12,6 +12,7 @@ interface VinylCardProps {
 
 const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
   const [loadingImage, setLoadingImage] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const fetchCover = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -42,15 +43,12 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
       {/* Cover Image Area */}
       <div className="relative aspect-square w-full bg-stone-100 overflow-hidden">
-        {record.coverUrl ? (
+        {record.coverUrl && !imgError ? (
           <img
             src={record.coverUrl}
             alt={`${record.album} cover`}
             className="w-full h-full object-cover grayscale-[10%] group-hover:grayscale-0 transition-all duration-700 block"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://picsum.photos/400/400?grayscale&blur=2';
-              (e.target as HTMLImageElement).style.opacity = '0.3';
-            }}
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 bg-stone-50">
