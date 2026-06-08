@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Run security audit
-        # Falla el workflow ante vulnerabilidades de severidad HIGH o CRITICAL.
-        # El aviso de 'xlsx' (high, sin fix disponible) se documenta como excepción
-        # aceptada hasta que se migre la dependencia en un release dedicado.
-        run: npm audit --audit-level=high
+        # Falla el workflow ante vulnerabilidades HIGH o CRITICAL, salvo las advisories
+        # explícitamente aceptadas en audit-ci.jsonc (xlsx, sin fix disponible). Cualquier
+        # vulnerabilidad nueva que NO esté en la allowlist seguirá rompiendo la build.
+        run: npx audit-ci --config ./audit-ci.jsonc
