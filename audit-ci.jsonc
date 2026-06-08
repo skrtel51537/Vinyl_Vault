@@ -1,0 +1,16 @@
+{
+  // Fail CI on HIGH and CRITICAL severity advisories.
+  "high": true,
+
+  // Advisories explicitly acknowledged and accepted (no fix available upstream).
+  // Any NEW high/critical vulnerability NOT in this list will still fail the build.
+  //
+  // xlsx (SheetJS) @0.18.5 — no fix published on the npm registry:
+  //   GHSA-4r6h-8v6p-xvw6  Prototype Pollution
+  //   GHSA-5pgg-2g8v-p4x9  Regular Expression Denial of Service (ReDoS)
+  // Tracked for a dedicated migration release (move to SheetJS CDN build or exceljs).
+  "allowlist": [
+    "GHSA-4r6h-8v6p-xvw6",
+    "GHSA-5pgg-2g8v-p4x9"
+  ]
+}
