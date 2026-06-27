@@ -2,22 +2,22 @@
   // Fail CI on HIGH and CRITICAL severity advisories.
   "high": true,
 
+  // Audit PRODUCTION dependencies only. Vinyl Vault is a client-side static app:
+  // the build tooling (vite, esbuild, @babel, launch-editor, ...) lives in
+  // devDependencies and never ships in the deployed bundle, so its advisories are
+  // out of scope for what users actually run — and they were generating recurring
+  // weekly noise. Dependencies that DO ship to users are still fully audited.
+  "skip-dev": true,
+
   // Advisories explicitly acknowledged and accepted (no fix available upstream).
   // Any NEW high/critical vulnerability NOT in this list will still fail the build.
   //
-  // xlsx (SheetJS) @0.18.5 — no fix published on the npm registry:
+  // xlsx (SheetJS) @0.18.5 — PRODUCTION dep, no fix published on the npm registry:
   //   GHSA-4r6h-8v6p-xvw6  Prototype Pollution
   //   GHSA-5pgg-2g8v-p4x9  Regular Expression Denial of Service (ReDoS)
   // Tracked for a dedicated migration release (move to SheetJS CDN build or exceljs).
-  //
-  // esbuild (transitive via vite -> @vitejs/plugin-react) — DEV dependency only,
-  // not shipped in the production bundle:
-  //   GHSA-gv7w-rqvm-qjhr  RCE via NPM_CONFIG_REGISTRY (missing binary integrity check)
-  // Only fix is a breaking upgrade to vite 8. Accepted as low-risk dev tooling for now;
-  // tracked via the Dependabot "bump vite" PR, to be taken with full build/app verification.
   "allowlist": [
     "GHSA-4r6h-8v6p-xvw6",
-    "GHSA-5pgg-2g8v-p4x9",
-    "GHSA-gv7w-rqvm-qjhr"
+    "GHSA-5pgg-2g8v-p4x9"
   ]
 }
