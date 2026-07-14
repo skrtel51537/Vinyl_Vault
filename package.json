@@ -18,7 +18,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^25.9.2",
     "@vitejs/plugin-react": "^5.0.0",
     "audit-ci": "^7.1.0",
     "typescript": "~5.8.2",
