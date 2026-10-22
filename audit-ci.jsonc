@@ -3,21 +3,14 @@
   "high": true,
 
   // Audit PRODUCTION dependencies only. Vinyl Vault is a client-side static app:
-  // the build tooling (vite, esbuild, @babel, launch-editor, ...) lives in
-  // devDependencies and never ships in the deployed bundle, so its advisories are
-  // out of scope for what users actually run — and they were generating recurring
-  // weekly noise. Dependencies that DO ship to users are still fully audited.
+  // the build tooling (vite, esbuild, @babel, ...) lives in devDependencies and never
+  // ships in the deployed bundle. Dev-tooling advisories are surfaced instead by
+  // Dependabot alerts/PRs, so they don't fail this workflow every week.
   "skip-dev": true,
 
-  // Advisories explicitly acknowledged and accepted (no fix available upstream).
-  // Any NEW high/critical vulnerability NOT in this list will still fail the build.
-  //
-  // xlsx (SheetJS) @0.18.5 — PRODUCTION dep, no fix published on the npm registry:
-  //   GHSA-4r6h-8v6p-xvw6  Prototype Pollution
-  //   GHSA-5pgg-2g8v-p4x9  Regular Expression Denial of Service (ReDoS)
-  // Tracked for a dedicated migration release (move to SheetJS CDN build or exceljs).
-  "allowlist": [
-    "GHSA-4r6h-8v6p-xvw6",
-    "GHSA-5pgg-2g8v-p4x9"
-  ]
+  // Advisories explicitly acknowledged and accepted. Currently none: xlsx was
+  // upgraded to SheetJS 0.20.3 (official CDN build), which fixes CVE-2023-30533
+  // (prototype pollution) and CVE-2024-22363 (ReDoS). Add an entry here only with a
+  // comment explaining why it is accepted and how it will be resolved.
+  "allowlist": []
 }
