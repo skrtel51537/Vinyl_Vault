@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { VinylRecord } from '../types';
+import { notify } from './notify';
 
 class VinylDatabase extends Dexie {
   vinyls!: Table<VinylRecord>;
@@ -52,7 +53,7 @@ export const resetDatabase = async (): Promise<boolean> => {
     return true;
   } catch (err) {
     console.error("Could not clear database", err);
-    alert("Error clearing database. Check console for details.");
+    notify('Error clearing the database. Check the console for details.', 'error');
     return false;
   }
 };

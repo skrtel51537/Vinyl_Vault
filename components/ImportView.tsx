@@ -4,6 +4,7 @@ import { parseExcelFile } from '../services/excelService';
 import { db, resetDatabase } from '../services/db';
 import { VinylRecord } from '../types';
 import { exportFullBackup, importFullBackup } from '../services/backupService';
+import { confirmDialog, notify } from '../services/notify';
 
 interface ImportViewProps {
   onImportComplete: () => void;
@@ -40,7 +41,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
       );
 
       if (newRecords.length === 0) {
-        alert("All records in this file are already in your collection.");
+        notify('All records in this file are already in your collection.', 'info');
         onImportComplete(); // Navigate to collection even if duplicates
         return;
       }
@@ -48,9 +49,11 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
       await db.vinyls.bulkAdd(newRecords);
 
       const skippedCount = records.length - newRecords.length;
-      if (skippedCount > 0) {
-        alert(`Imported ${newRecords.length} new records. Skipped ${skippedCount} duplicates that were already in your library.`);
-      }
+      notify(
+        `Imported ${newRecords.length} new record${newRecords.length === 1 ? '' : 's'}.` +
+        (skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} already in your library.` : ''),
+        'success'
+      );
 
       onImportComplete(); // Trigger navigation
 
@@ -90,13 +93,17 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
   };
 
   const handleReset = async () => {
-    if (window.confirm("Are you sure you want to delete ALL records? This cannot be undone.")) {
+    const confirmed = await confirmDialog(
+      'This will delete ALL records in your collection. This cannot be undone.\n\nConsider making a Full Backup first.',
+      { title: 'Clear database?', confirmLabel: 'Delete everything', danger: true }
+    );
+    if (confirmed) {
       setIsProcessing(true);
       const success = await resetDatabase();
       setIsProcessing(false);
       if (success) {
         setError(null);
-        alert("Database has been cleared.");
+        notify('Database has been cleared.', 'success');
       }
     }
   };
@@ -203,13 +210,13 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded border border-red-200 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-sm border border-red-200 text-sm">
+            <AlertCircle className="w-5 h-5 shrink-0" />
             <p>{error}</p>
           </div>
         )}
 
-        <div className="text-left text-xs text-stone-500 bg-stone-50 p-4 rounded border border-stone-200 font-mono leading-relaxed">
+        <div className="text-left text-xs text-stone-500 bg-stone-50 p-4 rounded-sm border border-stone-200 font-mono leading-relaxed">
           <p className="font-bold mb-2 text-stone-700 uppercase tracking-wide">Required Columns (Row 2):</p>
           <p>Artist, Album, Genre, Collection, Release Year, Country, Label, Cat. Number, Condition Sleeve, Condition Media, Sound Quality, Rating, Best tracks, Others/Comments, Discogs link, To be sold</p>
         </div>
@@ -222,7 +229,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         </div>
 
         {/* Backup/Restore Section */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+        <div className="bg-linear-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
           <p className="text-sm text-stone-600 mb-4">
             Create a complete backup including all metadata <strong>and cover images</strong>. Use this to safely transfer your collection or protect against data loss.
           </p>

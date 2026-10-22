@@ -2,6 +2,7 @@ import React from 'react';
 import { VinylRecord } from '../types';
 import { Disc, ExternalLink, DollarSign } from 'lucide-react';
 import { sanitizeExternalLink } from '../services/url';
+import { coverAtSize } from '../services/image';
 
 interface VinylTableProps {
   records: VinylRecord[];
@@ -38,11 +39,11 @@ const VinylTable: React.FC<VinylTableProps> = ({ records, onRowClick }) => {
                 >
                   <td className="px-4 py-2">
                     <div
-                      className="w-10 h-10 rounded bg-stone-100 border border-stone-200 overflow-hidden flex items-center justify-center shrink-0"
+                      className="w-10 h-10 rounded-sm bg-stone-100 border border-stone-200 overflow-hidden flex items-center justify-center shrink-0"
                       style={record.dominantColor ? { borderColor: record.dominantColor } : undefined}
                     >
                       {record.coverUrl ? (
-                        <img src={record.coverUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={coverAtSize(record.coverUrl, 100)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       ) : (
                         <Disc className="w-5 h-5 text-stone-300" />
                       )}

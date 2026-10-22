@@ -5,21 +5,28 @@ import { db } from '../services/db';
 import { findAlbumCover } from '../services/itunesService';
 import { sanitizeExternalLink } from '../services/url';
 import { extractDominantColor } from '../services/color';
+import { coverAtSize } from '../services/image';
+import { notify } from '../services/notify';
 
 interface VinylCardProps {
   record: VinylRecord;
-  onClick?: () => void;
+  onSelect?: (record: VinylRecord) => void;
 }
 
-const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
+const VinylCard: React.FC<VinylCardProps> = ({ record, onSelect }) => {
   const [loadingImage, setLoadingImage] = useState(false);
   const [imgError, setImgError] = useState(false);
+
+  // A new cover (e.g. after "Find Art") gets a fresh chance to load.
+  useEffect(() => {
+    setImgError(false);
+  }, [record.coverUrl]);
 
   // Lazily compute and persist the dominant cover color (backfills existing records).
   useEffect(() => {
     let cancelled = false;
     if (record.coverUrl && !record.dominantColor && record.id !== undefined) {
-      extractDominantColor(record.coverUrl).then(color => {
+      extractDominantColor(coverAtSize(record.coverUrl, 100)!).then(color => {
         if (!cancelled && color) {
           db.vinyls.update(record.id!, { dominantColor: color });
         }
@@ -40,7 +47,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
         // Update DB
         await db.vinyls.update(record.id!, { coverUrl: url });
       } else {
-        alert("Could not find cover image in iTunes.");
+        notify(`Could not find a cover for "${record.album}" in iTunes.`, 'info');
       }
     } catch (err) {
       console.error(err);
@@ -51,17 +58,19 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
   return (
     <div
-      onClick={onClick}
-      className="group bg-white rounded-sm flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible cursor-pointer border border-[#78350f]"
+      onClick={() => onSelect?.(record)}
+      className="group bg-white rounded-xs flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible cursor-pointer border border-[#78350f]"
     >
 
       {/* Cover Image Area */}
       <div className="relative aspect-square w-full bg-stone-100 overflow-hidden">
         {record.coverUrl && !imgError ? (
           <img
-            src={record.coverUrl}
+            src={coverAtSize(record.coverUrl, 400)}
             alt={`${record.album} cover`}
-            className="w-full h-full object-cover grayscale-[10%] group-hover:grayscale-0 transition-all duration-700 block"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover grayscale-10 group-hover:grayscale-0 transition-all duration-700 block"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -72,7 +81,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
             <button
               onClick={fetchCover}
-              className="mt-4 flex items-center gap-2 px-3 py-1 bg-white border border-stone-300 hover:border-amber-600 hover:text-amber-700 text-stone-500 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all shadow-sm"
+              className="mt-4 flex items-center gap-2 px-3 py-1 bg-white border border-stone-300 hover:border-amber-600 hover:text-amber-700 text-stone-500 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all shadow-xs"
             >
               {loadingImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />}
               {loadingImage ? "Digging..." : "Find Art"}
@@ -97,7 +106,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
         {/* To Be Sold Badge - Sticker style */}
         {record.toBeSold && (
-          <div className="absolute bottom-2 right-2 bg-red-600 text-white px-2 py-0.5 rounded-sm shadow-md flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide transform -rotate-2">
+          <div className="absolute bottom-2 right-2 bg-red-600 text-white px-2 py-0.5 rounded-xs shadow-md flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide transform -rotate-2">
             <DollarSign className="w-3 h-3" />
             For Sale
           </div>
@@ -111,7 +120,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
       />
 
       {/* Details Area - Looks like the back or label */}
-      <div className="p-4 flex flex-col flex-grow relative bg-white">
+      <div className="p-4 flex flex-col grow relative bg-white">
         <h3 className="font-bold text-lg text-stone-900 leading-tight mb-1 font-serif line-clamp-2 group-hover:text-amber-800 transition-colors" title={record.album}>{record.album}</h3>
         <p className="text-stone-500 text-sm font-semibold uppercase tracking-wide truncate mb-3 border-b border-stone-100 pb-2" title={record.artist}>{record.artist}</p>
 
@@ -146,4 +155,24 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
   );
 };
 
-export default VinylCard;
+// useLiveQuery returns fresh record objects on every DB change, so compare the fields
+// the card actually renders instead of object identity. Without this, any single
+// change (e.g. a dominant color being saved) re-rendered every card in the collection.
+const sameCard = (prev: VinylCardProps, next: VinylCardProps): boolean => {
+  const a = prev.record, b = next.record;
+  return prev.onSelect === next.onSelect
+    && a.id === b.id
+    && a.album === b.album
+    && a.artist === b.artist
+    && a.coverUrl === b.coverUrl
+    && a.dominantColor === b.dominantColor
+    && a.releaseYear === b.releaseYear
+    && a.country === b.country
+    && a.rating === b.rating
+    && a.soundQuality === b.soundQuality
+    && a.toBeSold === b.toBeSold
+    && a.discogsLink === b.discogsLink
+    && a.genre.join('\u0000') === b.genre.join('\u0000');
+};
+
+export default React.memo(VinylCard, sameCard);

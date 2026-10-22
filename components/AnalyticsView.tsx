@@ -69,7 +69,7 @@ const AnalyticsView: React.FC = () => {
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-3 border border-[#78350f] rounded shadow-xl">
+                <div className="bg-white p-3 border border-[#78350f] rounded-sm shadow-xl">
                     <p className="font-bold text-[#78350f]">{label}</p>
                     <p className="text-sm text-stone-600">{payload[0].value} Records</p>
                 </div>
@@ -93,7 +93,7 @@ const AnalyticsView: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* 1. Time Machine */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-amber-600" />
@@ -118,7 +118,7 @@ const AnalyticsView: React.FC = () => {
                 </div>
 
                 {/* 2. Musical DNA (Genres) */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Music className="w-5 h-5 text-amber-600" />
@@ -150,7 +150,7 @@ const AnalyticsView: React.FC = () => {
                 </div>
 
                 {/* 3. Collection Health */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Activity className="w-5 h-5 text-amber-600" />
@@ -189,7 +189,7 @@ const AnalyticsView: React.FC = () => {
                 </div>
 
                 {/* 4. Top Artists */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Trophy className="w-5 h-5 text-amber-600" />

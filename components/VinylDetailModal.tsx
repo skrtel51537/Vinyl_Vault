@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { VinylRecord } from '../types';
 import { X, Disc, Music, Calendar, Globe, Tag, DollarSign, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2 } from 'lucide-react';
 import { db, deleteVinylById } from '../services/db';
 import { sanitizeExternalLink } from '../services/url';
+import { confirmDialog, notify } from '../services/notify';
 import AddVinylForm from './AddVinylForm';
 
 interface VinylDetailModalProps {
@@ -29,6 +30,46 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
   // If liveRecord is undefined (deleted), we still show initialRecord until modal closes
   const record = liveRecord || initialRecord;
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // While editing (or deleting), Escape / backdrop clicks are ignored so unsaved
+  // changes are never lost to an accidental key press or click.
+  const canDismiss = !isEditing && !isDeleting;
+
+  // On open: move focus into the dialog and lock background scroll.
+  // On close: restore scroll and return focus to where it was.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  // Escape closes the dialog; Tab / Shift+Tab stay inside it.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (canDismiss) { e.preventDefault(); onClose(); }
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const candidates: ArrayLike<HTMLElement> = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const focusable = Array.from(candidates).filter(el => el.offsetParent !== null);
+      if (focusable.length === 0) { e.preventDefault(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === dialogRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [canDismiss, onClose]);
+
   const handleDelete = async (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -36,11 +77,15 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
       if (isDeleting) return;
 
       if (initialRecord.id === undefined || initialRecord.id === null) {
-          alert("Error: Cannot delete this record because it has no valid ID.");
+          notify('Cannot delete this record because it has no valid ID.', 'error');
           return;
       }
 
-      if (window.confirm(`Delete "${initialRecord.album}" permanently?`)) {
+      const confirmed = await confirmDialog(
+          `"${initialRecord.album}" by ${initialRecord.artist} will be permanently removed from your collection.`,
+          { title: 'Delete record?', confirmLabel: 'Delete', danger: true }
+      );
+      if (confirmed) {
           setIsDeleting(true);
           try {
               const idToDelete = Number(initialRecord.id);
@@ -53,7 +98,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
               onClose();
           } catch (error) {
               console.error("[Modal] Delete failed:", error);
-              alert(`Failed to delete record: ${error}`);
+              notify(`Failed to delete record: ${error}`, 'error');
               setIsDeleting(false);
           }
       }
@@ -62,14 +107,22 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
   if (!record) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div 
-        className="bg-[#fcfaf9] w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col relative border-4 border-[#78350f]"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+      onClick={() => { if (canDismiss) onClose(); }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vinyl-modal-title"
+        tabIndex={-1}
+        className="bg-[#fcfaf9] w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col relative border-4 border-[#78350f] outline-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-[#451a03] p-4 flex justify-between items-center border-b border-[#78350f] shrink-0">
-          <h2 className="text-xl font-serif font-bold text-amber-50 flex items-center gap-2">
+          <h2 id="vinyl-modal-title" className="text-xl font-serif font-bold text-amber-50 flex items-center gap-2">
             <Disc className="w-5 h-5 text-amber-500" />
             {isEditing ? 'Editing Record' : 'Record Details'}
           </h2>
@@ -79,8 +132,9 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                 <button 
                   onClick={() => setIsEditing(true)}
                   disabled={isDeleting}
-                  className="text-amber-200 hover:text-white transition-colors p-2 rounded hover:bg-white/10 flex items-center gap-1 text-sm font-medium disabled:opacity-50"
+                  className="text-amber-200 hover:text-white transition-colors p-2 rounded-sm hover:bg-white/10 flex items-center gap-1 text-sm font-medium disabled:opacity-50"
                   title="Edit Record"
+                  aria-label="Edit Record"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -88,8 +142,9 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                 <button 
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="text-amber-200 hover:text-red-400 transition-colors p-2 rounded hover:bg-white/10 flex items-center gap-1 text-sm font-medium cursor-pointer z-50 disabled:opacity-50"
+                  className="text-amber-200 hover:text-red-400 transition-colors p-2 rounded-sm hover:bg-white/10 flex items-center gap-1 text-sm font-medium cursor-pointer z-50 disabled:opacity-50"
                   title="Delete Record"
+                  aria-label="Delete Record"
                 >
                   {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
@@ -97,9 +152,11 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
               </>
             )}
             
-            <button 
+            <button
               onClick={onClose}
-              className="text-amber-200 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+              title="Close"
+              aria-label="Close"
+              className="text-amber-200 hover:text-white transition-colors p-1 rounded-sm hover:bg-white/10"
             >
               <X className="w-6 h-6" />
             </button>
@@ -107,7 +164,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto p-6 md:p-8 custom-scrollbar bg-stone-50 flex-grow">
+        <div className="overflow-y-auto p-6 md:p-8 custom-scrollbar bg-stone-50 grow">
           {isEditing ? (
              <AddVinylForm 
                 initialValues={record} 
@@ -119,7 +176,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
             <div className={`flex flex-col md:flex-row gap-8 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
                 {/* Left Column */}
                 <div className="w-full md:w-1/3 flex flex-col gap-4">
-                    <div className="aspect-square w-full rounded-sm shadow-xl bg-white p-1 border border-stone-200 relative overflow-hidden group">
+                    <div className="aspect-square w-full rounded-xs shadow-xl bg-white p-1 border border-stone-200 relative overflow-hidden group">
                         {record.coverUrl ? (
                             <img src={record.coverUrl} alt={record.album} className="w-full h-full object-cover" />
                         ) : (
@@ -134,7 +191,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                         )}
                     </div>
 
-                    <div className="bg-white p-4 rounded border border-stone-200 text-center shadow-sm">
+                    <div className="bg-white p-4 rounded-sm border border-stone-200 text-center shadow-xs">
                         <div className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Personal Rating</div>
                         <div className="flex items-center justify-center gap-1">
                             <span className="text-4xl font-serif font-bold text-[#78350f]">
@@ -149,7 +206,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                         href={sanitizeExternalLink(record.discogsLink)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-sm rounded transition-colors uppercase tracking-wide"
+                        className="flex items-center justify-center gap-2 w-full py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-sm rounded-sm transition-colors uppercase tracking-wide"
                         >
                         <ExternalLink className="w-4 h-4" />
                         View on Discogs
@@ -160,7 +217,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                 {/* Right Column */}
                 <div className="w-full md:w-2/3 space-y-6">
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-serif font-bold text-stone-900 leading-tight mb-1">{record.album}</h1>
+                        <h1 className="text-3xl md:text-4xl font-serif font-bold text-stone-900 leading-tight md:leading-10 mb-1">{record.album}</h1>
                         <h2 className="text-xl md:text-2xl font-medium text-[#78350f]">{record.artist}</h2>
                     </div>
 
@@ -172,7 +229,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm bg-white p-4 rounded border border-stone-200 shadow-sm">
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-white p-4 rounded-sm border border-stone-200 shadow-xs">
                         <div>
                             <span className="block text-xs font-bold text-stone-400 uppercase">Release Year</span>
                             <span className="font-semibold text-stone-800">{record.releaseYear || 'Unknown'}</span>
@@ -200,15 +257,15 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-amber-50 p-3 rounded border border-amber-100 text-center">
+                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center">
                             <span className="block text-[10px] font-bold text-amber-800 uppercase">Sleeve</span>
                             <span className="text-lg font-bold text-[#78350f]">{record.conditionSleeve}</span>
                         </div>
-                        <div className="bg-amber-50 p-3 rounded border border-amber-100 text-center">
+                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center">
                             <span className="block text-[10px] font-bold text-amber-800 uppercase">Media</span>
                             <span className="text-lg font-bold text-[#78350f]">{record.conditionMedia}</span>
                         </div>
-                        <div className="bg-amber-50 p-3 rounded border border-amber-100 text-center">
+                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center">
                             <span className="block text-[10px] font-bold text-amber-800 uppercase">Sound</span>
                             <span className="text-lg font-bold text-[#78350f]">
                                 {record.soundQuality && record.soundQuality > 0 ? record.soundQuality : '-'}/5
@@ -221,7 +278,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                             <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <ListMusic className="w-4 h-4" /> Best Tracks
                             </h3>
-                            <div className="bg-white border border-stone-200 rounded p-4">
+                            <div className="bg-white border border-stone-200 rounded-sm p-4">
                                 <ul className="list-disc list-inside space-y-1 text-stone-700">
                                     {record.bestTracks.map((track, i) => (
                                         <li key={i}>{track}</li>
@@ -236,7 +293,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                             <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <MessageSquare className="w-4 h-4" /> Others/Comments
                             </h3>
-                            <p className="bg-[#fffef0] p-4 rounded border border-stone-200 text-stone-700 italic text-sm leading-relaxed font-serif">
+                            <p className="bg-[#fffef0] p-4 rounded-sm border border-stone-200 text-stone-700 italic text-sm leading-relaxed font-serif">
                                 "{record.comments}"
                             </p>
                         </div>
