@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Ejecución automática cada lunes a las 8:00 UTC
+    # Ejecución automática cada lunes a las 8:00 UTC.
+    # Nota: GitHub desactiva los workflows programados tras 60 días sin actividad
+    # en el repositorio; se reactivan desde la pestaña Actions.
     - cron: '0 8 * * 1'
+  # Permite lanzarlo a mano desde la pestaña Actions.
+  workflow_dispatch:
 
 jobs:
   audit:
@@ -16,19 +20,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run security audit
-        # Falla el workflow ante vulnerabilidades HIGH o CRITICAL, salvo las advisories
-        # explícitamente aceptadas en audit-ci.jsonc (xlsx, sin fix disponible). Cualquier
-        # vulnerabilidad nueva que NO esté en la allowlist seguirá rompiendo la build.
+        # Falla ante vulnerabilidades HIGH o CRITICAL en dependencias de producción,
+        # salvo las advisories aceptadas explícitamente en audit-ci.jsonc (hoy ninguna).
         run: npx audit-ci --config ./audit-ci.jsonc

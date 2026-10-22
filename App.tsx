@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from './services/db';
+import { db, requestPersistentStorage } from './services/db';
 import ImportView from './components/ImportView';
 import CollectionView from './components/CollectionView';
 import AddVinylForm from './components/AddVinylForm';
@@ -13,6 +13,11 @@ type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analyti
 const App: React.FC = () => {
   const vinylCount = useLiveQuery(() => db.vinyls.count());
   const [currentView, setCurrentView] = useState<ViewState>('loading');
+
+  // The collection only lives in this browser: protect it from storage eviction.
+  useEffect(() => {
+    requestPersistentStorage();
+  }, []);
 
   useEffect(() => {
     // Wait for Dexie to initialize
@@ -81,36 +86,43 @@ const App: React.FC = () => {
                 <nav className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentView('collection')}
+                    aria-label="Collection"
+                    aria-current={currentView === 'collection' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'collection' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
-                    <span className="hidden sm:inline">Collection</span>
+                    <span className="sr-only sm:not-sr-only">Collection</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('analytics')}
+                    aria-label="Analytics"
+                    aria-current={currentView === 'analytics' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'analytics' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <BarChart2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Analytics</span>
+                    <span className="sr-only sm:not-sr-only">Analytics</span>
                   </button>
 
                   <button
                     onClick={() => setCurrentView('add')}
+                    aria-label="Add Record"
+                    aria-current={currentView === 'add' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Add Record</span>
+                    <span className="sr-only sm:not-sr-only">Add Record</span>
                   </button>
 
                   <div className="h-6 w-px bg-amber-800 mx-1"></div>
 
                   <button
                     onClick={handleExit}
+                    aria-label="Exit to Home"
                     className="px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border border-transparent text-amber-200/50 hover:text-red-200 hover:bg-red-900/20"
-                    title="Exit to Import Screen"
+                    title="Exit to Home"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Exit</span>
+                    <span className="sr-only sm:not-sr-only">Exit</span>
                   </button>
                 </nav>
               </div>

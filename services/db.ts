@@ -14,6 +14,21 @@ class VinylDatabase extends Dexie {
 
 export const db = new VinylDatabase();
 
+/**
+ * Ask the browser to keep this origin's storage (IndexedDB) as "persistent", so the
+ * collection is not evicted under storage pressure. The browser may grant it silently
+ * (Chrome/Edge, based on engagement) or ask the user (Firefox). Safe to call repeatedly.
+ */
+export const requestPersistentStorage = async (): Promise<boolean> => {
+  try {
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+};
+
 export const deleteVinylById = async (id: number): Promise<void> => {
   console.log(`[DB] Deleting ID: ${id} (type: ${typeof id})`);
   // Direct delete. Dexie promises are reliable. 
