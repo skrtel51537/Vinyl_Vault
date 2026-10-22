@@ -19,7 +19,8 @@ const CSP_PRODUCTION = [
 ].join('; ');
 
 // The dev server needs inline scripts (React Fast Refresh preamble), injected
-// <style> tags (Vite CSS HMR) and a WebSocket to the local HMR server.
+// <style> tags (Vite CSS HMR), a WebSocket to the local HMR server, and a blob:
+// SharedWorker that Vite's client uses to detect when a stopped server is back.
 const CSP_DEVELOPMENT = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -27,7 +28,7 @@ const CSP_DEVELOPMENT = [
   "font-src 'self'",
   "img-src 'self' data: https://*.mzstatic.com",
   "connect-src 'self' https://itunes.apple.com ws://localhost:*",
-  "worker-src 'none'",
+  "worker-src blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
