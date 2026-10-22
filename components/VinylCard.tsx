@@ -6,6 +6,7 @@ import { findAlbumCover } from '../services/itunesService';
 import { sanitizeExternalLink } from '../services/url';
 import { extractDominantColor } from '../services/color';
 import { coverAtSize } from '../services/image';
+import { notify } from '../services/notify';
 
 interface VinylCardProps {
   record: VinylRecord;
@@ -46,7 +47,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onSelect }) => {
         // Update DB
         await db.vinyls.update(record.id!, { coverUrl: url });
       } else {
-        alert("Could not find cover image in iTunes.");
+        notify(`Could not find a cover for "${record.album}" in iTunes.`, 'info');
       }
     } catch (err) {
       console.error(err);

@@ -4,6 +4,7 @@ import { VinylRecord } from '../types';
 import { X, Disc, Music, Calendar, Globe, Tag, DollarSign, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2 } from 'lucide-react';
 import { db, deleteVinylById } from '../services/db';
 import { sanitizeExternalLink } from '../services/url';
+import { confirmDialog, notify } from '../services/notify';
 import AddVinylForm from './AddVinylForm';
 
 interface VinylDetailModalProps {
@@ -76,11 +77,15 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
       if (isDeleting) return;
 
       if (initialRecord.id === undefined || initialRecord.id === null) {
-          alert("Error: Cannot delete this record because it has no valid ID.");
+          notify('Cannot delete this record because it has no valid ID.', 'error');
           return;
       }
 
-      if (window.confirm(`Delete "${initialRecord.album}" permanently?`)) {
+      const confirmed = await confirmDialog(
+          `"${initialRecord.album}" by ${initialRecord.artist} will be permanently removed from your collection.`,
+          { title: 'Delete record?', confirmLabel: 'Delete', danger: true }
+      );
+      if (confirmed) {
           setIsDeleting(true);
           try {
               const idToDelete = Number(initialRecord.id);
@@ -93,7 +98,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
               onClose();
           } catch (error) {
               console.error("[Modal] Delete failed:", error);
-              alert(`Failed to delete record: ${error}`);
+              notify(`Failed to delete record: ${error}`, 'error');
               setIsDeleting(false);
           }
       }

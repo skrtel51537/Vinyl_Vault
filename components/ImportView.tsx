@@ -4,6 +4,7 @@ import { parseExcelFile } from '../services/excelService';
 import { db, resetDatabase } from '../services/db';
 import { VinylRecord } from '../types';
 import { exportFullBackup, importFullBackup } from '../services/backupService';
+import { confirmDialog, notify } from '../services/notify';
 
 interface ImportViewProps {
   onImportComplete: () => void;
@@ -40,7 +41,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
       );
 
       if (newRecords.length === 0) {
-        alert("All records in this file are already in your collection.");
+        notify('All records in this file are already in your collection.', 'info');
         onImportComplete(); // Navigate to collection even if duplicates
         return;
       }
@@ -48,9 +49,11 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
       await db.vinyls.bulkAdd(newRecords);
 
       const skippedCount = records.length - newRecords.length;
-      if (skippedCount > 0) {
-        alert(`Imported ${newRecords.length} new records. Skipped ${skippedCount} duplicates that were already in your library.`);
-      }
+      notify(
+        `Imported ${newRecords.length} new record${newRecords.length === 1 ? '' : 's'}.` +
+        (skippedCount > 0 ? ` Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} already in your library.` : ''),
+        'success'
+      );
 
       onImportComplete(); // Trigger navigation
 
@@ -90,13 +93,17 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
   };
 
   const handleReset = async () => {
-    if (window.confirm("Are you sure you want to delete ALL records? This cannot be undone.")) {
+    const confirmed = await confirmDialog(
+      'This will delete ALL records in your collection. This cannot be undone.\n\nConsider making a Full Backup first.',
+      { title: 'Clear database?', confirmLabel: 'Delete everything', danger: true }
+    );
+    if (confirmed) {
       setIsProcessing(true);
       const success = await resetDatabase();
       setIsProcessing(false);
       if (success) {
         setError(null);
-        alert("Database has been cleared.");
+        notify('Database has been cleared.', 'success');
       }
     }
   };

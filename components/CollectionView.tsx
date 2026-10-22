@@ -7,6 +7,10 @@ import VinylDetailModal from './VinylDetailModal';
 import { FilterState, VinylRecord, ViewMode } from '../types';
 import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2, LayoutGrid, List } from 'lucide-react';
 import { findAlbumCover } from '../services/itunesService';
+import { confirmDialog, notify } from '../services/notify';
+
+// The iTunes Search API is rate limited to roughly 20 requests per minute.
+const ITUNES_DELAY_MS = 3000;
 
 type SortOption =
     | 'added_desc'
@@ -168,13 +172,17 @@ const CollectionView: React.FC = () => {
         const missingCovers = allVinyls.filter(v => !v.coverUrl);
 
         if (missingCovers.length === 0) {
-            alert("All records already have covers!");
+            notify('All records already have covers!', 'info');
             return;
         }
 
-        if (!window.confirm(`Found ${missingCovers.length} records without covers. Scan for them now? This may take some time.`)) {
-            return;
-        }
+        const minutes = Math.ceil((missingCovers.length * ITUNES_DELAY_MS) / 60000);
+        const confirmed = await confirmDialog(
+            `Found ${missingCovers.length} record${missingCovers.length === 1 ? '' : 's'} without covers.\n` +
+            `Searching iTunes takes about ${minutes} minute${minutes === 1 ? '' : 's'} (requests are spaced out to respect Apple's rate limit).`,
+            { title: 'Scan for missing covers?', confirmLabel: 'Start scan' }
+        );
+        if (!confirmed) return;
 
         setIsScanning(true);
         let foundCount = 0;
@@ -185,8 +193,8 @@ const CollectionView: React.FC = () => {
                 setScanProgress(`Scanning ${i + 1}/${missingCovers.length}...`);
 
                 try {
-                    // Rate limiting delay (1s) to be safe
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Space requests out: the iTunes Search API allows roughly 20 calls per minute.
+                    if (i > 0) await new Promise(resolve => setTimeout(resolve, ITUNES_DELAY_MS));
 
                     const url = await findAlbumCover(record.artist, record.album);
                     if (url) {
@@ -197,10 +205,10 @@ const CollectionView: React.FC = () => {
                     console.error(`Error scanning ${record.album}:`, err);
                 }
             }
-            alert(`Scan complete! Found covers for ${foundCount} of ${missingCovers.length} records.`);
+            notify(`Scan complete: found covers for ${foundCount} of ${missingCovers.length} records.`, foundCount > 0 ? 'success' : 'info');
         } catch (error) {
             console.error("Scan failed:", error);
-            alert("Scan process was interrupted.");
+            notify('The cover scan was interrupted.', 'error');
         } finally {
             setIsScanning(false);
             setScanProgress("");

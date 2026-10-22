@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { VinylRecord } from '../types';
 import { db } from '../services/db';
+import { notify } from '../services/notify';
 import { Save, X, PlusCircle, Edit, Upload, Image } from 'lucide-react';
 
 interface AddVinylFormProps {
@@ -71,7 +72,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     e.preventDefault();
 
     if (!formData.artist || !formData.album) {
-      alert("Artist and Album are required.");
+      notify('Artist and Album are required.', 'error');
       return;
     }
 
@@ -110,7 +111,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
       onSave();
     } catch (error) {
       console.error("Failed to save record", error);
-      alert("Error saving record.");
+      notify('Error saving the record.', 'error');
     }
   };
 

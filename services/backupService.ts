@@ -1,6 +1,7 @@
 import { db } from './db';
 import { VinylRecord } from '../types';
 import { exportCollectionToExcel } from './excelService';
+import { confirmDialog, notify } from './notify';
 
 /**
  * Backup file format interface
@@ -20,7 +21,7 @@ export const exportFullBackup = async (): Promise<void> => {
   const records = await db.vinyls.toArray();
   
   if (records.length === 0) {
-    alert('No records to backup.');
+    notify('No records to back up.', 'info');
     return;
   }
 
@@ -48,7 +49,7 @@ export const exportFullBackup = async (): Promise<void> => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 
-  alert(`Backup complete! Exported ${records.length} records.\n\nTwo files have been downloaded:\n• Excel (metadata)\n• JSON (full backup with covers)`);
+  notify(`Backup complete: ${records.length} records exported.\nDownloaded an Excel file (metadata) and a JSON file (full backup with covers).`, 'success');
 };
 
 const toStr = (v: unknown, fallback = ''): string =>
@@ -124,7 +125,7 @@ export const importFullBackup = async (file: File): Promise<boolean> => {
 
         // Validate backup format
         if (!backup.version || !backup.records || !Array.isArray(backup.records)) {
-          alert('Invalid backup file format. Please select a valid Vinyl Vault backup.');
+          notify('Invalid backup file format. Please select a valid Vinyl Vault backup.', 'error');
           resolve(false);
           return;
         }
@@ -136,18 +137,18 @@ export const importFullBackup = async (file: File): Promise<boolean> => {
         const skipped = backup.records.length - recordsToAdd.length;
 
         if (recordsToAdd.length === 0) {
-          alert('This backup contains no valid records. Your collection was not changed.');
+          notify('This backup contains no valid records. Your collection was not changed.', 'error');
           resolve(false);
           return;
         }
 
         const exportDate = new Date(backup.exportDate);
-        const confirmed = window.confirm(
+        const confirmed = await confirmDialog(
           `This backup contains ${recordsToAdd.length} valid records` +
           (isNaN(exportDate.getTime()) ? '' : ` from ${exportDate.toLocaleDateString()}`) + '.' +
           (skipped > 0 ? `\n${skipped} invalid entries will be skipped.` : '') +
-          `\n\n⚠️ WARNING: This will REPLACE all current data in your collection.\n\n` +
-          `Do you want to proceed?`
+          `\n\nThis will REPLACE all current data in your collection.`,
+          { title: 'Restore backup?', confirmLabel: 'Replace collection', danger: true }
         );
 
         if (!confirmed) {
@@ -161,13 +162,13 @@ export const importFullBackup = async (file: File): Promise<boolean> => {
           await db.vinyls.bulkAdd(recordsToAdd);
         });
 
-        alert(`Restore complete! ${recordsToAdd.length} records have been imported.` +
-          (skipped > 0 ? ` ${skipped} invalid entries were skipped.` : ''));
+        notify(`Restore complete: ${recordsToAdd.length} records imported.` +
+          (skipped > 0 ? ` ${skipped} invalid entries were skipped.` : ''), 'success');
         resolve(true);
 
       } catch (error) {
         console.error('Backup restore failed:', error);
-        alert('Failed to restore backup. The file may be corrupted or in an invalid format.');
+        notify('Failed to restore backup. The file may be corrupted or in an invalid format. Your collection was not changed.', 'error');
         reject(error);
       }
     };

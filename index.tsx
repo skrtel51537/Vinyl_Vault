@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import Notifications from './components/Notifications';
 
 // Self-hosted Playfair Display (previously loaded from Google Fonts).
 // Inter was also loaded before, but it never rendered: the app root uses
@@ -20,5 +21,6 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <App />
+    <Notifications />
   </React.StrictMode>
 );
