@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, requestPersistentStorage } from './services/db';
 import ImportView from './components/ImportView';
 import CollectionView from './components/CollectionView';
 import AddVinylForm from './components/AddVinylForm';
 import HomeView from './components/HomeView';
-import AnalyticsView from './components/AnalyticsView';
+// Analytics pulls in recharts (~300 KB with its dependencies): load it on demand.
+const AnalyticsView = React.lazy(() => import('./components/AnalyticsView'));
 import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2 } from 'lucide-react';
 
 type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics';
@@ -133,7 +134,13 @@ const App: React.FC = () => {
               {currentView === 'collection' ? (
                 <CollectionView />
               ) : currentView === 'analytics' ? (
-                <AnalyticsView />
+                <Suspense fallback={
+                  <div className="flex items-center justify-center py-24">
+                    <Loader2 className="w-8 h-8 text-[#78350f] animate-spin" />
+                  </div>
+                }>
+                  <AnalyticsView />
+                </Suspense>
               ) : (
                 <AddVinylForm onCancel={() => setCurrentView('collection')} onSave={() => setCurrentView('collection')} />
               )}

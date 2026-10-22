@@ -25,7 +25,7 @@ export const exportFullBackup = async (): Promise<void> => {
   }
 
   // 1. Export Excel (existing functionality)
-  exportCollectionToExcel(records);
+  await exportCollectionToExcel(records);
 
   // 2. Export JSON with full data including coverUrl (Base64 images)
   const backup: VinylVaultBackup = {

@@ -1,5 +1,8 @@
-import * as XLSX from 'xlsx';
 import { VinylRecord } from '../types';
+
+// xlsx is ~420 KB minified and only needed for Excel import/export, so it is loaded
+// on demand (its own chunk) instead of being part of the initial bundle.
+const loadXlsx = () => import('xlsx');
 
 // Helper to split strings by delimiters like ";" or "/"
 // Updated to handle non-string inputs (like numbers) by casting them first.
@@ -22,13 +25,14 @@ const parseYesNo = (val: any): boolean => {
 };
 
 export const parseExcelFile = async (file: File): Promise<VinylRecord[]> => {
+  const XLSX = await loadXlsx();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onload = (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const data = e.target?.result as ArrayBuffer;
+        const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
 
@@ -73,11 +77,12 @@ export const parseExcelFile = async (file: File): Promise<VinylRecord[]> => {
     };
 
     reader.onerror = (error) => reject(error);
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 };
 
-export const exportCollectionToExcel = (records: VinylRecord[]) => {
+export const exportCollectionToExcel = async (records: VinylRecord[]): Promise<void> => {
+  const XLSX = await loadXlsx();
   // Map internal data back to the User's Excel columns
   const excelRows = records.map(r => ({
     'Artist': r.artist,
