@@ -86,6 +86,8 @@ const App: React.FC = () => {
                 <nav className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentView('collection')}
+                    aria-label="Collection"
+                    aria-current={currentView === 'collection' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'collection' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
@@ -93,6 +95,8 @@ const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setCurrentView('analytics')}
+                    aria-label="Analytics"
+                    aria-current={currentView === 'analytics' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'analytics' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <BarChart2 className="w-4 h-4" />
@@ -101,6 +105,8 @@ const App: React.FC = () => {
 
                   <button
                     onClick={() => setCurrentView('add')}
+                    aria-label="Add Record"
+                    aria-current={currentView === 'add' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <PlusCircle className="w-4 h-4" />
@@ -111,6 +117,7 @@ const App: React.FC = () => {
 
                   <button
                     onClick={handleExit}
+                    aria-label="Exit to Home"
                     className="px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border border-transparent text-amber-200/50 hover:text-red-200 hover:bg-red-900/20"
                     title="Exit to Home"
                   >
