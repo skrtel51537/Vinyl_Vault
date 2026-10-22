@@ -7,7 +7,8 @@ import AddVinylForm from './components/AddVinylForm';
 import HomeView from './components/HomeView';
 // Analytics pulls in recharts (~300 KB with its dependencies): load it on demand.
 const AnalyticsView = React.lazy(() => import('./components/AnalyticsView'));
-import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2 } from 'lucide-react';
+import ErrorBoundary, { isChunkLoadError } from './components/ErrorBoundary';
+import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2, AlertCircle } from 'lucide-react';
 
 type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics';
 
@@ -134,13 +135,41 @@ const App: React.FC = () => {
               {currentView === 'collection' ? (
                 <CollectionView />
               ) : currentView === 'analytics' ? (
-                <Suspense fallback={
-                  <div className="flex items-center justify-center py-24">
-                    <Loader2 className="w-8 h-8 text-[#78350f] animate-spin" />
+                <ErrorBoundary fallback={(error) => (
+                  <div className="max-w-xl mx-auto mt-16 px-4">
+                    <div role="alert" className="bg-white border border-[#78350f] rounded-lg shadow-md p-8 text-center space-y-4">
+                      <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
+                      <h2 className="text-2xl font-serif font-bold text-stone-800">Analytics couldn't load</h2>
+                      <p className="text-stone-600 text-sm leading-relaxed">
+                        {isChunkLoadError(error)
+                          ? 'Part of the app could not be downloaded. Check your connection, or reload if the app was just updated. Your collection is safe.'
+                          : 'Something went wrong while showing your analytics. Your collection is safe.'}
+                      </p>
+                      <div className="flex justify-center gap-3 pt-2">
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 rounded-sm bg-amber-800 hover:bg-amber-900 text-white text-sm font-bold uppercase tracking-wider shadow-md transition-colors"
+                        >
+                          Reload app
+                        </button>
+                        <button
+                          onClick={() => setCurrentView('collection')}
+                          className="px-4 py-2 rounded-sm border border-stone-300 text-stone-600 hover:text-stone-900 hover:border-stone-500 text-sm font-bold uppercase tracking-wider transition-colors"
+                        >
+                          Back to collection
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                }>
-                  <AnalyticsView />
-                </Suspense>
+                )}>
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center py-24">
+                      <Loader2 className="w-8 h-8 text-[#78350f] animate-spin" />
+                    </div>
+                  }>
+                    <AnalyticsView />
+                  </Suspense>
+                </ErrorBoundary>
               ) : (
                 <AddVinylForm onCancel={() => setCurrentView('collection')} onSave={() => setCurrentView('collection')} />
               )}
