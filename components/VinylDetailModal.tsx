@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { VinylRecord } from '../types';
 import { X, Disc, Music, Calendar, Globe, Tag, DollarSign, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2 } from 'lucide-react';
@@ -28,6 +28,46 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
 
   // If liveRecord is undefined (deleted), we still show initialRecord until modal closes
   const record = liveRecord || initialRecord;
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // While editing (or deleting), Escape / backdrop clicks are ignored so unsaved
+  // changes are never lost to an accidental key press or click.
+  const canDismiss = !isEditing && !isDeleting;
+
+  // On open: move focus into the dialog and lock background scroll.
+  // On close: restore scroll and return focus to where it was.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  // Escape closes the dialog; Tab / Shift+Tab stay inside it.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (canDismiss) { e.preventDefault(); onClose(); }
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const candidates: ArrayLike<HTMLElement> = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const focusable = Array.from(candidates).filter(el => el.offsetParent !== null);
+      if (focusable.length === 0) { e.preventDefault(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === dialogRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [canDismiss, onClose]);
 
   const handleDelete = async (e: React.MouseEvent) => {
       e.preventDefault();
@@ -62,14 +102,22 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
   if (!record) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-      <div 
-        className="bg-[#fcfaf9] w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col relative border-4 border-[#78350f]"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+      onClick={() => { if (canDismiss) onClose(); }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vinyl-modal-title"
+        tabIndex={-1}
+        className="bg-[#fcfaf9] w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col relative border-4 border-[#78350f] outline-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-[#451a03] p-4 flex justify-between items-center border-b border-[#78350f] shrink-0">
-          <h2 className="text-xl font-serif font-bold text-amber-50 flex items-center gap-2">
+          <h2 id="vinyl-modal-title" className="text-xl font-serif font-bold text-amber-50 flex items-center gap-2">
             <Disc className="w-5 h-5 text-amber-500" />
             {isEditing ? 'Editing Record' : 'Record Details'}
           </h2>
@@ -81,6 +129,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                   disabled={isDeleting}
                   className="text-amber-200 hover:text-white transition-colors p-2 rounded-sm hover:bg-white/10 flex items-center gap-1 text-sm font-medium disabled:opacity-50"
                   title="Edit Record"
+                  aria-label="Edit Record"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -90,6 +139,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                   disabled={isDeleting}
                   className="text-amber-200 hover:text-red-400 transition-colors p-2 rounded-sm hover:bg-white/10 flex items-center gap-1 text-sm font-medium cursor-pointer z-50 disabled:opacity-50"
                   title="Delete Record"
+                  aria-label="Delete Record"
                 >
                   {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
@@ -97,8 +147,10 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
               </>
             )}
             
-            <button 
+            <button
               onClick={onClose}
+              title="Close"
+              aria-label="Close"
               className="text-amber-200 hover:text-white transition-colors p-1 rounded-sm hover:bg-white/10"
             >
               <X className="w-6 h-6" />
