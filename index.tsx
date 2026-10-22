@@ -4,13 +4,12 @@ import App from './App';
 import Notifications from './components/Notifications';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Self-hosted Playfair Display (previously loaded from Google Fonts).
-// Inter was also loaded before, but it never rendered: the app root uses
-// `font-sans` (system UI font), so it is not bundled.
-import '@fontsource/playfair-display/400.css';
-import '@fontsource/playfair-display/400-italic.css';
-import '@fontsource/playfair-display/600.css';
-import '@fontsource/playfair-display/700.css';
+// Self-hosted variable fonts: one file per family covers every weight in use,
+// so bold text renders with true bold glyphs instead of synthesized ones.
+// Inter (UI text, with optical sizing) + Playfair Display (headings).
+import '@fontsource-variable/inter/opsz.css';
+import '@fontsource-variable/playfair-display/index.css';
+import '@fontsource-variable/playfair-display/wght-italic.css';
 import './index.css';
 
 const rootElement = document.getElementById('root');
