@@ -88,7 +88,7 @@ const App: React.FC = () => {
                     onClick={() => setCurrentView('collection')}
                     aria-label="Collection"
                     aria-current={currentView === 'collection' ? 'page' : undefined}
-                    className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'collection' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
+                    className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'collection' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
                     <span className="sr-only sm:not-sr-only">Collection</span>
@@ -97,7 +97,7 @@ const App: React.FC = () => {
                     onClick={() => setCurrentView('analytics')}
                     aria-label="Analytics"
                     aria-current={currentView === 'analytics' ? 'page' : undefined}
-                    className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'analytics' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
+                    className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'analytics' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <BarChart2 className="w-4 h-4" />
                     <span className="sr-only sm:not-sr-only">Analytics</span>
@@ -107,7 +107,7 @@ const App: React.FC = () => {
                     onClick={() => setCurrentView('add')}
                     aria-label="Add Record"
                     aria-current={currentView === 'add' ? 'page' : undefined}
-                    className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
+                    className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span className="sr-only sm:not-sr-only">Add Record</span>
@@ -118,7 +118,7 @@ const App: React.FC = () => {
                   <button
                     onClick={handleExit}
                     aria-label="Exit to Home"
-                    className="px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border border-transparent text-amber-200/50 hover:text-red-200 hover:bg-red-900/20"
+                    className="px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border border-transparent text-amber-200/50 hover:text-red-200 hover:bg-red-900/20"
                     title="Exit to Home"
                   >
                     <LogOut className="w-4 h-4" />
@@ -129,7 +129,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-grow">
+            <div className="grow">
               {currentView === 'collection' ? (
                 <CollectionView />
               ) : currentView === 'analytics' ? (

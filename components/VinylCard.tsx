@@ -52,7 +52,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="group bg-white rounded-sm flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible cursor-pointer border border-[#78350f]"
+      className="group bg-white rounded-xs flex flex-col h-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible cursor-pointer border border-[#78350f]"
     >
 
       {/* Cover Image Area */}
@@ -61,7 +61,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
           <img
             src={record.coverUrl}
             alt={`${record.album} cover`}
-            className="w-full h-full object-cover grayscale-[10%] group-hover:grayscale-0 transition-all duration-700 block"
+            className="w-full h-full object-cover grayscale-10 group-hover:grayscale-0 transition-all duration-700 block"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -72,7 +72,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
             <button
               onClick={fetchCover}
-              className="mt-4 flex items-center gap-2 px-3 py-1 bg-white border border-stone-300 hover:border-amber-600 hover:text-amber-700 text-stone-500 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all shadow-sm"
+              className="mt-4 flex items-center gap-2 px-3 py-1 bg-white border border-stone-300 hover:border-amber-600 hover:text-amber-700 text-stone-500 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all shadow-xs"
             >
               {loadingImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />}
               {loadingImage ? "Digging..." : "Find Art"}
@@ -97,7 +97,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
         {/* To Be Sold Badge - Sticker style */}
         {record.toBeSold && (
-          <div className="absolute bottom-2 right-2 bg-red-600 text-white px-2 py-0.5 rounded-sm shadow-md flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide transform -rotate-2">
+          <div className="absolute bottom-2 right-2 bg-red-600 text-white px-2 py-0.5 rounded-xs shadow-md flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide transform -rotate-2">
             <DollarSign className="w-3 h-3" />
             For Sale
           </div>
@@ -111,7 +111,7 @@ const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
       />
 
       {/* Details Area - Looks like the back or label */}
-      <div className="p-4 flex flex-col flex-grow relative bg-white">
+      <div className="p-4 flex flex-col grow relative bg-white">
         <h3 className="font-bold text-lg text-stone-900 leading-tight mb-1 font-serif line-clamp-2 group-hover:text-amber-800 transition-colors" title={record.album}>{record.album}</h3>
         <p className="text-stone-500 text-sm font-semibold uppercase tracking-wide truncate mb-3 border-b border-stone-100 pb-2" title={record.artist}>{record.artist}</p>
 

@@ -13,10 +13,10 @@ const HomeView: React.FC<HomeViewProps> = ({ vinylCount, onEnter, onImport }) =>
 
             {/* Hero Section */}
             <div className="text-center mb-12 space-y-4 animate-fade-in-down">
-                <div className="inline-flex items-center justify-center p-6 bg-[#451a03] rounded-full shadow-2xl border-4 border-[#78350f] mb-4">
+                <div className="inline-flex items-center justify-center p-6 bg-[#451a03] rounded-full shadow-2xl border-4 border-[#78350f] mb-8">
                     <Disc className="w-20 h-20 text-amber-500" />
                 </div>
-                <h1 className="text-6xl font-serif font-bold text-[#451a03] tracking-tight drop-shadow-sm">
+                <h1 className="text-6xl font-serif font-bold text-[#451a03] tracking-tight drop-shadow-xs">
                     Vinyl Vault
                 </h1>
                 <p className="text-xl text-stone-600 font-light max-w-md mx-auto">

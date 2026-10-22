@@ -203,13 +203,13 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded border border-red-200 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-sm border border-red-200 text-sm">
+            <AlertCircle className="w-5 h-5 shrink-0" />
             <p>{error}</p>
           </div>
         )}
 
-        <div className="text-left text-xs text-stone-500 bg-stone-50 p-4 rounded border border-stone-200 font-mono leading-relaxed">
+        <div className="text-left text-xs text-stone-500 bg-stone-50 p-4 rounded-sm border border-stone-200 font-mono leading-relaxed">
           <p className="font-bold mb-2 text-stone-700 uppercase tracking-wide">Required Columns (Row 2):</p>
           <p>Artist, Album, Genre, Collection, Release Year, Country, Label, Cat. Number, Condition Sleeve, Condition Media, Sound Quality, Rating, Best tracks, Others/Comments, Discogs link, To be sold</p>
         </div>
@@ -222,7 +222,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         </div>
 
         {/* Backup/Restore Section */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+        <div className="bg-linear-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
           <p className="text-sm text-stone-600 mb-4">
             Create a complete backup including all metadata <strong>and cover images</strong>. Use this to safely transfer your collection or protect against data loss.
           </p>

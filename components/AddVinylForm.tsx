@@ -114,7 +114,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     }
   };
 
-  const inputClass = "w-full bg-white border border-stone-300 rounded px-4 py-2.5 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-none transition-colors placeholder-stone-400";
+  const inputClass = "w-full bg-white border border-stone-300 rounded-sm px-4 py-2.5 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
   const labelClass = "text-xs font-bold text-stone-500 uppercase tracking-wider mb-1 block";
 
   const Container = embedded ? React.Fragment : 'div';
@@ -154,10 +154,10 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
               </div>
 
               {/* Manual Cover Upload for New/Edit */}
-              <div className="bg-stone-50 p-4 rounded border border-stone-200">
+              <div className="bg-stone-50 p-4 rounded-sm border border-stone-200">
                 <label className={labelClass}>Cover Image</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-stone-200 rounded border border-stone-300 flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-16 h-16 bg-stone-200 rounded-sm border border-stone-300 flex items-center justify-center overflow-hidden shrink-0">
                     {formData.coverUrl ? (
                       <img src={formData.coverUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
@@ -165,7 +165,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-stone-300 rounded text-sm font-bold text-stone-600 hover:bg-stone-50 hover:border-amber-500 transition-colors">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-stone-300 rounded-sm text-sm font-bold text-stone-600 hover:bg-stone-50 hover:border-amber-500 transition-colors">
                       <Upload className="w-4 h-4" />
                       Upload File
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -210,7 +210,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
           </div>
 
           {/* Conditions Panel */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-5 bg-amber-50/50 rounded border border-amber-100">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-5 bg-amber-50/50 rounded-sm border border-amber-100">
             <div>
               <label className={labelClass}>Sleeve</label>
               <select name="conditionSleeve" value={formData.conditionSleeve} onChange={handleChange} className={inputClass}>
@@ -261,17 +261,17 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
             <textarea name="comments" rows={3} value={formData.comments} onChange={handleChange} className={inputClass} />
           </div>
 
-          <div className="flex items-center gap-3 p-4 border border-stone-200 rounded bg-stone-50 w-max">
-            <input type="checkbox" id="toBeSold" name="toBeSold" checked={formData.toBeSold} onChange={handleChange} className="w-5 h-5 accent-amber-600 rounded cursor-pointer" />
+          <div className="flex items-center gap-3 p-4 border border-stone-200 rounded-sm bg-stone-50 w-max">
+            <input type="checkbox" id="toBeSold" name="toBeSold" checked={formData.toBeSold} onChange={handleChange} className="w-5 h-5 accent-amber-600 rounded-sm cursor-pointer" />
             <label htmlFor="toBeSold" className="text-stone-700 font-bold cursor-pointer text-sm">Mark for Sale</label>
           </div>
 
           <div className="flex gap-4 pt-6 border-t border-stone-200 mt-6">
-            <button type="submit" className="flex-1 bg-amber-800 hover:bg-amber-900 text-white font-bold py-3 px-6 rounded shadow-lg flex items-center justify-center gap-2 transition-all uppercase tracking-wider text-sm">
+            <button type="submit" className="flex-1 bg-amber-800 hover:bg-amber-900 text-white font-bold py-3 px-6 rounded-sm shadow-lg flex items-center justify-center gap-2 transition-all uppercase tracking-wider text-sm">
               <Save className="w-5 h-5" />
               {initialValues ? 'Update Record' : 'Save to Shelf'}
             </button>
-            <button type="button" onClick={onCancel} className="px-6 py-3 border border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-500 rounded font-medium transition-all uppercase tracking-wider text-sm">
+            <button type="button" onClick={onCancel} className="px-6 py-3 border border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-500 rounded-sm font-medium transition-all uppercase tracking-wider text-sm">
               Cancel
             </button>
           </div>

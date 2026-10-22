@@ -38,7 +38,7 @@ const VinylTable: React.FC<VinylTableProps> = ({ records, onRowClick }) => {
                 >
                   <td className="px-4 py-2">
                     <div
-                      className="w-10 h-10 rounded bg-stone-100 border border-stone-200 overflow-hidden flex items-center justify-center shrink-0"
+                      className="w-10 h-10 rounded-sm bg-stone-100 border border-stone-200 overflow-hidden flex items-center justify-center shrink-0"
                       style={record.dominantColor ? { borderColor: record.dominantColor } : undefined}
                     >
                       {record.coverUrl ? (
