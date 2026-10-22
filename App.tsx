@@ -89,14 +89,14 @@ const App: React.FC = () => {
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'collection' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <LayoutGrid className="w-4 h-4" />
-                    <span className="hidden sm:inline">Collection</span>
+                    <span className="sr-only sm:not-sr-only">Collection</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('analytics')}
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'analytics' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <BarChart2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Analytics</span>
+                    <span className="sr-only sm:not-sr-only">Analytics</span>
                   </button>
 
                   <button
@@ -104,7 +104,7 @@ const App: React.FC = () => {
                     className={`px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Add Record</span>
+                    <span className="sr-only sm:not-sr-only">Add Record</span>
                   </button>
 
                   <div className="h-6 w-px bg-amber-800 mx-1"></div>
@@ -112,10 +112,10 @@ const App: React.FC = () => {
                   <button
                     onClick={handleExit}
                     className="px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2 border border-transparent text-amber-200/50 hover:text-red-200 hover:bg-red-900/20"
-                    title="Exit to Import Screen"
+                    title="Exit to Home"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Exit</span>
+                    <span className="sr-only sm:not-sr-only">Exit</span>
                   </button>
                 </nav>
               </div>
