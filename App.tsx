@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from './services/db';
+import { db, requestPersistentStorage } from './services/db';
 import ImportView from './components/ImportView';
 import CollectionView from './components/CollectionView';
 import AddVinylForm from './components/AddVinylForm';
@@ -13,6 +13,11 @@ type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analyti
 const App: React.FC = () => {
   const vinylCount = useLiveQuery(() => db.vinyls.count());
   const [currentView, setCurrentView] = useState<ViewState>('loading');
+
+  // The collection only lives in this browser: protect it from storage eviction.
+  useEffect(() => {
+    requestPersistentStorage();
+  }, []);
 
   useEffect(() => {
     // Wait for Dexie to initialize
