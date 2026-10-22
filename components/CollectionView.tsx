@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import VinylCard from './VinylCard';
@@ -90,13 +90,18 @@ const CollectionView: React.FC = () => {
         };
     }, [allVinyls]);
 
+    // Keep typing responsive: the input updates immediately, while filtering the
+    // collection uses a deferred copy of the search text that React can interrupt.
+    const deferredSearch = useDeferredValue(filters.search);
+
     // Filter AND Sort Logic
     const processedVinyls = useMemo(() => {
         if (!allVinyls) return [];
 
+        const searchLower = deferredSearch.toLowerCase();
+
         // 1. Filter
         let filtered = allVinyls.filter(record => {
-            const searchLower = filters.search.toLowerCase();
             const matchesSearch =
                 String(record.album || '').toLowerCase().includes(searchLower) ||
                 String(record.artist || '').toLowerCase().includes(searchLower) ||
@@ -150,7 +155,8 @@ const CollectionView: React.FC = () => {
             }
         });
 
-    }, [allVinyls, filters, sortOption]);
+    }, [allVinyls, deferredSearch, filters.genre, filters.artist, filters.collection, filters.releaseYear,
+        filters.conditionSleeve, filters.conditionMedia, filters.toBeSold, sortOption]);
 
     const [isScanning, setIsScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState("");
@@ -446,7 +452,7 @@ const CollectionView: React.FC = () => {
                             <VinylCard
                                 key={record.id}
                                 record={record}
-                                onClick={() => setSelectedRecord(record)}
+                                onSelect={setSelectedRecord}
                             />
                         ))}
                     </div>
