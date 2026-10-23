@@ -5,16 +5,22 @@ import ImportView from './components/ImportView';
 import CollectionView from './components/CollectionView';
 import AddVinylForm from './components/AddVinylForm';
 import HomeView from './components/HomeView';
+import WishlistView from './components/WishlistView';
 // Analytics pulls in recharts (~300 KB with its dependencies): load it on demand.
 const AnalyticsView = React.lazy(() => import('./components/AnalyticsView'));
 import ErrorBoundary, { isChunkLoadError } from './components/ErrorBoundary';
-import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2, AlertCircle } from 'lucide-react';
+import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2, AlertCircle, Heart } from 'lucide-react';
+import { WishlistItem } from './types';
+import { wishlistToRecord } from './services/wishlist';
+import { notify } from './services/notify';
 
-type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics';
+type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics' | 'wishlist';
 
 const App: React.FC = () => {
   const vinylCount = useLiveQuery(() => db.vinyls.count());
   const [currentView, setCurrentView] = useState<ViewState>('loading');
+  // Wishlist item being added to the collection ("Got it!"), if any.
+  const [acquiring, setAcquiring] = useState<WishlistItem | null>(null);
 
   // The collection only lives in this browser: protect it from storage eviction.
   useEffect(() => {
@@ -106,7 +112,17 @@ const App: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => setCurrentView('add')}
+                    onClick={() => setCurrentView('wishlist')}
+                    aria-label="Wishlist"
+                    aria-current={currentView === 'wishlist' ? 'page' : undefined}
+                    className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'wishlist' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="sr-only sm:not-sr-only">Wishlist</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setAcquiring(null); setCurrentView('add'); }}
                     aria-label="Add Record"
                     aria-current={currentView === 'add' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
@@ -170,8 +186,20 @@ const App: React.FC = () => {
                     <AnalyticsView />
                   </Suspense>
                 </ErrorBoundary>
+              ) : currentView === 'wishlist' ? (
+                <WishlistView onAcquire={(item) => { setAcquiring(item); setCurrentView('add'); }} />
               ) : (
-                <AddVinylForm onCancel={() => setCurrentView('collection')} onSave={() => setCurrentView('collection')} />
+                <AddVinylForm
+                  key={acquiring?.id ?? 'new'}
+                  prefill={acquiring ? wishlistToRecord(acquiring) : undefined}
+                  wishlistItemId={acquiring?.id}
+                  onCancel={() => setCurrentView(acquiring ? 'wishlist' : 'collection')}
+                  onSave={() => {
+                    if (acquiring) notify(`"${acquiring.album}" moved from your wishlist to your collection.`, 'success');
+                    setAcquiring(null);
+                    setCurrentView('collection');
+                  }}
+                />
               )}
             </div>
           </>

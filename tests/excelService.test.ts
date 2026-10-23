@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as XLSX from 'xlsx';
 import { exportCollectionToExcel, parseExcelFile } from '../services/excelService';
 import { VinylRecord } from '../types';
-import { makeRecord } from './fixtures';
+import { makeRecord, makeWishlistItem } from './fixtures';
 
 // Capture the workbook instead of triggering a download.
 vi.mock('xlsx', async (importOriginal) => {
@@ -74,5 +74,24 @@ describe('exportCollectionToExcel', () => {
     // The Excel file holds metadata only: no id, cover, color or date added.
     const metadata = ({ id: _id, addedAt: _addedAt, coverUrl: _cover, dominantColor: _color, ...rest }: VinylRecord) => rest;
     expect(parsed.map(metadata)).toEqual(original.map(metadata));
+    expect(workbook.SheetNames).toEqual(['Collection']);
+  });
+
+  it('adds the wishlist on its own sheet, which import ignores', async () => {
+    const wishes = [
+      makeWishlistItem({ album: 'Low one', priority: 'low', maxPrice: null }),
+      makeWishlistItem({ album: 'Top one', priority: 'high', maxPrice: 19.99 }),
+    ];
+    await exportCollectionToExcel([makeRecord()], wishes);
+
+    const [workbook] = vi.mocked(XLSX.writeFile).mock.calls[0];
+    expect(workbook.SheetNames).toEqual(['Collection', 'Wishlist']);
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets['Wishlist']);
+    expect(rows.map(r => r['Album'])).toEqual(['Top one', 'Low one']);
+    expect(rows[0]).toMatchObject({ 'Artist': 'John Coltrane', 'Priority': 'High', 'Max price': 19.99, 'Added': '2025-02-01' });
+
+    const data = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+    const parsed = await parseExcelFile(new File([data], 'roundtrip.xlsx'));
+    expect(parsed.map(r => r.album)).toEqual(['Kind of Blue']);
   });
 });

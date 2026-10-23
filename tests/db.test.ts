@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { db } from '../services/db';
 import { makeRecord } from './fixtures';
 
-describe('database upgrade to v2', () => {
-  it('keeps every record and only drops the old dominant colors', async () => {
+describe('database upgrades', () => {
+  it('v1 → v3 keeps every record, drops the old dominant colors and adds an empty wishlist', async () => {
     // Simulate a database created by app 1.3.x (schema version 1).
     const legacy = new Dexie('VinylVaultDB');
     legacy.version(1).stores({ vinyls: '++id, artist, album, *genre, releaseYear, rating, toBeSold, addedAt' });
@@ -16,10 +16,11 @@ describe('database upgrade to v2', () => {
 
     const records = await db.vinyls.orderBy('album').toArray();
 
-    expect(db.verno).toBe(2);
+    expect(db.verno).toBe(3);
     expect(records.map(r => r.album)).toEqual(['A', 'B']);
     expect(records[0].coverUrl).toBe('data:image/png;base64,AA');
     expect(records.some(r => 'dominantColor' in r)).toBe(false);
+    expect(await db.wishlist.count()).toBe(0);
   });
 
   it('removes a field when updated with undefined (used when a cover changes)', async () => {

@@ -96,7 +96,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
 
   const handleReset = async () => {
     const confirmed = await confirmDialog(
-      'This will delete ALL records in your collection. This cannot be undone.\n\nConsider making a Full Backup first.',
+      'This will delete ALL records in your collection. This cannot be undone. Your wishlist is kept.\n\nConsider making a Full Backup first.',
       { title: 'Clear database?', confirmLabel: 'Delete everything', danger: true }
     );
     if (confirmed) {
@@ -235,7 +235,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         {/* Backup/Restore Section */}
         <div className="bg-linear-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
           <p className="text-sm text-stone-600 mb-4">
-            Create a complete backup including all metadata <strong>and cover images</strong>. Use this to safely transfer your collection or protect against data loss.
+            Create a complete backup including all metadata, <strong>cover images</strong> and your wishlist. Use this to safely transfer your collection or protect against data loss.
           </p>
           <div className="flex gap-4 justify-center">
             <button

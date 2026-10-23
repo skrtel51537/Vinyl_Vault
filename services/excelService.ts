@@ -1,5 +1,6 @@
-import { VinylRecord } from '../types';
+import { VinylRecord, WishlistItem } from '../types';
 import { normalizeMoods } from './moods';
+import { PRIORITY_LABELS, sortWishlist } from './wishlist';
 
 // xlsx is ~420 KB minified and only needed for Excel import/export, so it is loaded
 // on demand (its own chunk) instead of being part of the initial bundle.
@@ -85,7 +86,7 @@ export const parseExcelFile = async (file: File): Promise<VinylRecord[]> => {
   });
 };
 
-export const exportCollectionToExcel = async (records: VinylRecord[]): Promise<void> => {
+export const exportCollectionToExcel = async (records: VinylRecord[], wishlist: WishlistItem[] = []): Promise<void> => {
   const XLSX = await loadXlsx();
   // Map internal data back to the User's Excel columns
   const excelRows = records.map(r => ({
@@ -111,7 +112,25 @@ export const exportCollectionToExcel = async (records: VinylRecord[]): Promise<v
   const worksheet = XLSX.utils.json_to_sheet(excelRows);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Collection");
-  
+
+  // The wishlist goes on its own sheet. Import only reads the first sheet, so it
+  // never ends up in the collection.
+  if (wishlist.length > 0) {
+    const wishlistRows = sortWishlist(wishlist).map(w => ({
+      'Artist': w.artist,
+      'Album': w.album,
+      'Label': w.label,
+      'Cat. Number': w.catNumber,
+      'Release Year': w.releaseYear,
+      'Priority': PRIORITY_LABELS[w.priority],
+      'Max price': w.maxPrice,
+      'Notes': w.notes,
+      'Discogs link': w.discogsLink,
+      'Added': new Date(w.addedAt).toISOString().split('T')[0],
+    }));
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(wishlistRows), "Wishlist");
+  }
+
   // Generate file name with date
   const dateStr = new Date().toISOString().split('T')[0];
   XLSX.writeFile(workbook, `Vinyl_Collection_Backup_${dateStr}.xlsx`);

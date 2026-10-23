@@ -24,6 +24,23 @@ export interface VinylRecord {
 
 export type Mood = 'Relax' | 'Energy' | 'Night' | 'Party' | 'Melancholy';
 
+export type WishlistPriority = 'high' | 'medium' | 'low';
+
+/** A record the user wants to buy. Kept apart from the collection and its statistics. */
+export interface WishlistItem {
+  id?: number; // Auto-incremented by Dexie
+  artist: string;
+  album: string;
+  label: string;
+  catNumber: string;
+  releaseYear: number | null;
+  discogsLink: string;
+  notes: string;
+  priority: WishlistPriority;
+  maxPrice: number | null; // In the user's currency; null = no limit
+  addedAt: Date;
+}
+
 export enum ViewMode {
   GRID = 'GRID',
   TABLE = 'TABLE',

@@ -1,9 +1,10 @@
 import Dexie, { Table } from 'dexie';
-import { VinylRecord } from '../types';
+import { VinylRecord, WishlistItem } from '../types';
 import { notify } from './notify';
 
 class VinylDatabase extends Dexie {
   vinyls!: Table<VinylRecord>;
+  wishlist!: Table<WishlistItem>;
 
   constructor() {
     super('VinylVaultDB');
@@ -17,6 +18,12 @@ class VinylDatabase extends Dexie {
     }).upgrade(tx => tx.table('vinyls').toCollection().modify((record: VinylRecord) => {
       delete record.dominantColor;
     }));
+    // v3 (app 1.5.0): the wishlist gets its own table, so it never mixes with the
+    // collection or its statistics. Existing records are untouched.
+    this.version(3).stores({
+      vinyls: '++id, artist, album, *genre, releaseYear, rating, toBeSold, addedAt',
+      wishlist: '++id, artist, album, priority, addedAt',
+    });
   }
 }
 
@@ -44,6 +51,17 @@ export const deleteVinylById = async (id: number): Promise<void> => {
   // This removes any read-before-write logic that could cause race conditions.
   await db.vinyls.delete(id);
 };
+
+/**
+ * "Got it!": add a wishlist record to the collection and remove it from the wishlist
+ * in a single transaction, so it is never lost nor in both places.
+ */
+export const moveWishlistItemToCollection = async (itemId: number, record: VinylRecord): Promise<number> =>
+  db.transaction('rw', db.vinyls, db.wishlist, async () => {
+    const id = await db.vinyls.add(record);
+    await db.wishlist.delete(itemId);
+    return id as number;
+  });
 
 export const resetDatabase = async (): Promise<boolean> => {
   try {
