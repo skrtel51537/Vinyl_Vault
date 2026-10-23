@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { VinylRecord } from '../types';
 import { db } from '../services/db';
 import { notify } from '../services/notify';
+import { resizeImageFile, UPLOADED_COVER_SIZE } from '../services/image';
 import { Save, X, PlusCircle, Edit, Upload, Image } from 'lucide-react';
 
 interface AddVinylFormProps {
@@ -57,14 +58,19 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, coverUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const coverUrl = await resizeImageFile(file);
+      setFormData(prev => ({ ...prev, coverUrl }));
+    } catch (error) {
+      console.error('Failed to process cover image', error);
+      notify('Could not read that image. Please choose a JPG, PNG, GIF or WebP file.', 'error');
+    } finally {
+      // Allow choosing the same file again after an error.
+      input.value = '';
     }
   };
 
@@ -100,6 +106,8 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
       discogsLink: formData.discogsLink || '',
       toBeSold: formData.toBeSold || false,
       coverUrl: formData.coverUrl,
+      // A new cover needs a new accent color (recomputed by the card).
+      ...(initialValues && formData.coverUrl !== initialValues.coverUrl ? { dominantColor: undefined } : {}),
     } as VinylRecord;
 
     try {
@@ -171,7 +179,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
                       Upload File
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                     </label>
-                    <p className="text-[10px] text-stone-400 mt-1">Accepts JPG, PNG, GIF</p>
+                    <p className="text-[10px] text-stone-400 mt-1">Accepts JPG, PNG, GIF, WebP · resized to {UPLOADED_COVER_SIZE}px</p>
                   </div>
                 </div>
               </div>

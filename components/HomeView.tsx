@@ -1,5 +1,6 @@
 import React from 'react';
-import { Disc, FileSpreadsheet, ArrowRight, Music } from 'lucide-react';
+import { Disc, FileSpreadsheet, ArrowRight, Music, ShieldAlert } from 'lucide-react';
+import { describeBackupAge, getLastBackupDate, isBackupOverdue } from '../services/backupReminder';
 
 interface HomeViewProps {
     vinylCount: number;
@@ -8,6 +9,9 @@ interface HomeViewProps {
 }
 
 const HomeView: React.FC<HomeViewProps> = ({ vinylCount, onEnter, onImport }) => {
+    const lastBackup = getLastBackupDate();
+    const showBackupReminder = vinylCount > 0 && isBackupOverdue(lastBackup);
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 relative z-20">
 
@@ -23,6 +27,23 @@ const HomeView: React.FC<HomeViewProps> = ({ vinylCount, onEnter, onImport }) =>
                     Your personal archive. Digital crate digging for the analog soul.
                 </p>
             </div>
+
+            {showBackupReminder && (
+                <div role="status" className="mb-8 max-w-4xl w-full flex flex-col sm:flex-row items-center gap-3 px-5 py-3 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-900 shadow-xs">
+                    <ShieldAlert className="w-5 h-5 shrink-0 text-amber-700" />
+                    <p className="flex-1 text-center sm:text-left">
+                        {lastBackup
+                            ? <>Your last backup was <strong>{describeBackupAge(lastBackup)}</strong>. Your collection only lives in this browser — make a fresh backup.</>
+                            : <>You haven't made a backup yet. Your collection only lives in this browser — make one to keep it safe.</>}
+                    </p>
+                    <button
+                        onClick={onImport}
+                        className="px-4 py-1.5 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-md transition-colors whitespace-nowrap"
+                    >
+                        Back up now
+                    </button>
+                </div>
+            )}
 
             {/* Action Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
@@ -77,7 +98,7 @@ const HomeView: React.FC<HomeViewProps> = ({ vinylCount, onEnter, onImport }) =>
             </div>
 
             <footer className="absolute bottom-6 text-stone-400 text-xs font-mono">
-                v1.3.1 • Local Storage • No Cloud
+                v{__APP_VERSION__} • Local Storage • No Cloud
             </footer>
         </div>
     );

@@ -5,6 +5,7 @@ import { db, resetDatabase } from '../services/db';
 import { VinylRecord } from '../types';
 import { exportFullBackup, importFullBackup } from '../services/backupService';
 import { confirmDialog, notify } from '../services/notify';
+import { describeBackupAge, getLastBackupDate, isBackupOverdue } from '../services/backupReminder';
 
 interface ImportViewProps {
   onImportComplete: () => void;
@@ -16,6 +17,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const [lastBackup, setLastBackup] = useState<Date | null>(getLastBackupDate);
 
   // ... (existing processFile, onDrop, onDragOver, onDragLeave, handleFileInput, handleReset logic remains unchanged) ...
 
@@ -112,6 +114,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
     setIsProcessing(true);
     try {
       await exportFullBackup();
+      setLastBackup(getLastBackupDate());
     } catch (err) {
       console.error(err);
       setError('Failed to create backup.');
@@ -257,6 +260,11 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
           </div>
           <p className="text-xs text-stone-500 mt-3">
             Full Backup exports: Excel (.xlsx) + JSON with covers (.json)
+          </p>
+          <p className={`text-xs mt-1 ${isBackupOverdue(lastBackup) ? 'text-amber-800 font-bold' : 'text-stone-500'}`}>
+            {lastBackup
+              ? `Last backup: ${lastBackup.toLocaleDateString()} (${describeBackupAge(lastBackup)})`
+              : 'No backup made from this browser yet.'}
           </p>
         </div>
       </div>
