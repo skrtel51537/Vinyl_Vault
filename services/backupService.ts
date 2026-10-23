@@ -2,6 +2,7 @@ import { db } from './db';
 import { VinylRecord } from '../types';
 import { exportCollectionToExcel } from './excelService';
 import { confirmDialog, notify } from './notify';
+import { recordBackupDone } from './backupReminder';
 
 /**
  * Backup file format interface
@@ -48,6 +49,7 @@ export const exportFullBackup = async (): Promise<void> => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+  recordBackupDone();
 
   notify(`Backup complete: ${records.length} records exported.\nDownloaded an Excel file (metadata) and a JSON file (full backup with covers).`, 'success');
 };

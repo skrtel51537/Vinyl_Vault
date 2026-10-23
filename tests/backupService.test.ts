@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../services/db';
 import { exportFullBackup, importFullBackup, normalizeRecord } from '../services/backupService';
 import { confirmDialog, notify } from '../services/notify';
+import { getLastBackupDate } from '../services/backupReminder';
 import { makeRecord } from './fixtures';
 
 vi.mock('../services/notify', () => ({
@@ -139,6 +140,7 @@ describe('exportFullBackup', () => {
     await exportFullBackup();
 
     expect(click).toHaveBeenCalledOnce();
+    expect(getLastBackupDate()).not.toBeNull();
     const backup = JSON.parse(await blob!.text());
     expect(backup.recordCount).toBe(2);
 
@@ -149,9 +151,11 @@ describe('exportFullBackup', () => {
   });
 
   it('does nothing for an empty collection', async () => {
+    localStorage.clear();
     URL.createObjectURL = vi.fn();
     await exportFullBackup();
     expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(getLastBackupDate()).toBeNull();
     expect(notify).toHaveBeenCalledWith('No records to back up.', 'info');
   });
 });
