@@ -8,16 +8,10 @@ import { FilterState, VinylRecord, ViewMode } from '../types';
 import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2, LayoutGrid, List } from 'lucide-react';
 import { findAlbumCover } from '../services/itunesService';
 import { confirmDialog, notify } from '../services/notify';
+import { filterAndSortVinyls, SortOption } from '../services/collectionFilter';
 
 // The iTunes Search API is rate limited to roughly 20 requests per minute.
 const ITUNES_DELAY_MS = 3000;
-
-type SortOption =
-    | 'added_desc'
-    | 'artist_asc' | 'artist_desc'
-    | 'year_asc' | 'year_desc'
-    | 'rating_desc' | 'rating_asc'
-    | 'sound_desc' | 'sound_asc';
 
 const sortOptions: { id: SortOption; label: string }[] = [
     { id: 'added_desc', label: 'Recently Added' },
@@ -101,64 +95,7 @@ const CollectionView: React.FC = () => {
     // Filter AND Sort Logic
     const processedVinyls = useMemo(() => {
         if (!allVinyls) return [];
-
-        const searchLower = deferredSearch.toLowerCase();
-
-        // 1. Filter
-        let filtered = allVinyls.filter(record => {
-            const matchesSearch =
-                String(record.album || '').toLowerCase().includes(searchLower) ||
-                String(record.artist || '').toLowerCase().includes(searchLower) ||
-                record.label.some(l => String(l).toLowerCase().includes(searchLower)) ||
-                record.genre.some(g => String(g).toLowerCase().includes(searchLower)) ||
-                String(record.releaseYear || '').includes(searchLower) ||
-                record.bestTracks.some(t => String(t).toLowerCase().includes(searchLower));
-
-            const matchesGenre = filters.genre ? record.genre.includes(filters.genre) : true;
-            const matchesArtist = filters.artist ? record.artist === filters.artist : true;
-            const matchesCollection = filters.collection ? record.collection === filters.collection : true;
-            const matchesYear = filters.releaseYear ? record.releaseYear === filters.releaseYear : true;
-            const matchesSleeve = filters.conditionSleeve ? record.conditionSleeve === filters.conditionSleeve : true;
-            const matchesMedia = filters.conditionMedia ? record.conditionMedia === filters.conditionMedia : true;
-            const matchesSold = filters.toBeSold === null ? true : record.toBeSold === filters.toBeSold;
-
-            return matchesSearch && matchesGenre && matchesArtist && matchesCollection && matchesYear && matchesSleeve && matchesMedia && matchesSold;
-        });
-
-        // 1.5 Special Filter for Rating/Sound Sorts
-        // If sorting by rating or sound, exclude items with 0/null values
-        if (sortOption.startsWith('rating_')) {
-            filtered = filtered.filter(v => (v.rating || 0) > 0);
-        } else if (sortOption.startsWith('sound_')) {
-            filtered = filtered.filter(v => (v.soundQuality || 0) > 0);
-        }
-
-
-        // 2. Sort
-        return filtered.sort((a, b) => {
-            switch (sortOption) {
-                case 'artist_asc':
-                    return a.artist.localeCompare(b.artist);
-                case 'artist_desc':
-                    return b.artist.localeCompare(a.artist);
-                case 'year_asc':
-                    return (a.releaseYear || 9999) - (b.releaseYear || 9999);
-                case 'year_desc':
-                    return (b.releaseYear || 0) - (a.releaseYear || 0);
-                case 'rating_desc':
-                    return (b.rating || 0) - (a.rating || 0);
-                case 'rating_asc':
-                    return (a.rating || 0) - (b.rating || 0);
-                case 'sound_desc':
-                    return (b.soundQuality || 0) - (a.soundQuality || 0);
-                case 'sound_asc':
-                    return (a.soundQuality || 0) - (b.soundQuality || 0);
-                case 'added_desc':
-                default:
-                    return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
-            }
-        });
-
+        return filterAndSortVinyls(allVinyls, { ...filters, search: deferredSearch }, sortOption);
     }, [allVinyls, deferredSearch, filters.genre, filters.artist, filters.collection, filters.releaseYear,
         filters.conditionSleeve, filters.conditionMedia, filters.toBeSold, sortOption]);
 
