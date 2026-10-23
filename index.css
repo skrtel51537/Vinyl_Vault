@@ -82,6 +82,58 @@
   --color-gray-400: #9ca3af;
 }
 
+/* Theme switching: `dark:` utilities follow <html data-theme="dark"> (set by
+   services/theme.ts, which also tracks the system setting) instead of the media query,
+   so the user's choice in the app wins. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Semantic colors: the surfaces and accents that change between light and dark. */
+@theme {
+  --color-page: #d6d3d1;          /* app background */
+  --color-paper: #ffffff;         /* cards, inputs, menus */
+  --color-cream: #fcfaf9;         /* dialogs */
+  --color-accent: #78350f;        /* wood-brown text and icons */
+  --color-accent-soft: #92400e;
+  --color-accent-strong: #451a03;
+}
+
+/* "Listening room": the dark variant of the wood & cream theme. The neutral stone
+   scale is inverted into warm walnut tones (dark surfaces, cream text), so most of the
+   UI adapts without per-element styles. Wood headers and frames keep their colors;
+   amber panels get `dark:` tweaks where they are used. */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-page: #17110d;
+  --color-paper: #241b16;
+  --color-cream: #1e1612;
+  --color-accent: #e0a45a;
+  --color-accent-soft: #c4853f;
+  --color-accent-strong: #f2cd92;
+
+  --color-stone-50: #2a201a;
+  --color-stone-100: #31261f;
+  --color-stone-200: #3f3129;
+  --color-stone-300: #54443a;
+  --color-stone-400: #8c7b6d;
+  --color-stone-500: #a69584;
+  --color-stone-600: #c2b2a1;
+  --color-stone-700: #d8cbbb;
+  --color-stone-800: #eadfd2;
+  --color-stone-900: #f5ece1;
+  --color-stone-950: #fbf6ef;
+
+  --color-gray-200: #3f3129;
+  --color-gray-400: #8c7b6d;
+}
+
+/* Before the app's script sets data-theme, avoid a white flash on dark systems. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) body {
+    background-color: #17110d;
+  }
+}
+
 @theme {
   --animate-fade-in: fade-in 0.25s ease-out;
   --animate-fade-in-up: fade-in-up 0.35s ease-out;
@@ -143,8 +195,8 @@
 @layer base {
   body {
     font-family: var(--font-sans);
-    background-color: #f5f5f4;
-    color: #44403c;
+    background-color: var(--color-stone-100);
+    color: var(--color-stone-700);
   }
 
   h1,
@@ -160,13 +212,13 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #e7e5e4;
+  background: var(--color-stone-200);
 }
 
 ::-webkit-scrollbar-thumb {
   background: #78350f;
   border-radius: 5px;
-  border: 2px solid #e7e5e4;
+  border: 2px solid var(--color-stone-200);
 }
 
 ::-webkit-scrollbar-thumb:hover {

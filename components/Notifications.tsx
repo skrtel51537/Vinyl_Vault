@@ -48,7 +48,7 @@ const ConfirmDialog: React.FC<{ request: ConfirmRequest }> = ({ request }) => {
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
-        className="bg-[#fcfaf9] w-full max-w-md rounded-lg shadow-2xl overflow-hidden border-4 border-[#78350f] animate-fade-in-up"
+        className="bg-cream w-full max-w-md rounded-lg shadow-2xl overflow-hidden border-4 border-[#78350f] animate-fade-in-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-[#451a03] px-5 py-3 flex items-center gap-2 border-b border-[#78350f]">

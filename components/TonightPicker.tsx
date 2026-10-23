@@ -44,7 +44,7 @@ const TonightPicker: React.FC<TonightPickerProps> = ({ records, recentPicks, onC
   const chipClass = (active: boolean) =>
     `px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${active
       ? 'bg-amber-800 border-amber-800 text-white shadow-xs'
-      : 'bg-white border-stone-300 text-stone-600 hover:border-amber-500'}`;
+      : 'bg-paper border-stone-300 text-stone-600 hover:border-amber-500'}`;
 
   const pickMoods = pick ? effectiveMoods(pick) : null;
 
@@ -56,7 +56,7 @@ const TonightPicker: React.FC<TonightPickerProps> = ({ records, recentPicks, onC
         aria-modal="true"
         aria-labelledby="tonight-title"
         tabIndex={-1}
-        className="bg-[#fcfaf9] w-full max-w-2xl max-h-[92vh] rounded-lg shadow-2xl overflow-hidden flex flex-col border-4 border-[#78350f] outline-hidden"
+        className="bg-cream w-full max-w-2xl max-h-[92vh] rounded-lg shadow-2xl overflow-hidden flex flex-col border-4 border-[#78350f] outline-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-[#451a03] p-4 flex justify-between items-center border-b border-[#78350f] shrink-0">
@@ -85,11 +85,11 @@ const TonightPicker: React.FC<TonightPickerProps> = ({ records, recentPicks, onC
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="flex items-center gap-2 text-stone-600">
-              <span className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Decade</span>
+              <span className="text-xs font-bold text-accent uppercase tracking-wider">Decade</span>
               <select
                 value={decade ?? ''}
                 onChange={(e) => setDecade(e.target.value ? Number(e.target.value) : null)}
-                className="bg-white border border-stone-300 rounded-sm px-2 py-1.5 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                className="bg-paper border border-stone-300 rounded-sm px-2 py-1.5 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
               >
                 <option value="">Any</option>
                 {decades.map(d => <option key={d} value={d}>{d}s</option>)}
@@ -120,16 +120,16 @@ const TonightPicker: React.FC<TonightPickerProps> = ({ records, recentPicks, onC
               <div className="flex-1 min-w-0 text-center sm:text-left space-y-3">
                 <div>
                   <h3 className="text-2xl md:text-3xl font-serif font-bold text-stone-900 leading-tight">{pick.album}</h3>
-                  <p className="text-lg font-medium text-[#78350f]">{pick.artist}</p>
+                  <p className="text-lg font-medium text-accent">{pick.artist}</p>
                   <p className="text-sm text-stone-500 mt-1">
                     {[pick.releaseYear, pick.genre.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}
-                    {pick.rating > 0 && <> · <span className="font-bold text-amber-700">{pick.rating}/10</span></>}
+                    {pick.rating > 0 && <> · <span className="font-bold text-amber-700 dark:text-amber-400">{pick.rating}/10</span></>}
                   </p>
                 </div>
                 {pickMoods && pickMoods.moods.length > 0 && (
                   <div className="flex flex-wrap justify-center sm:justify-start gap-1.5">
                     {pickMoods.moods.map(m => (
-                      <span key={m} className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${pickMoods.auto ? 'border-dashed border-stone-300 text-stone-500' : 'border-amber-300 text-amber-800'}`}>
+                      <span key={m} className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${pickMoods.auto ? 'border-dashed border-stone-300 text-stone-500' : 'border-amber-300 text-amber-800 dark:border-amber-800 dark:text-amber-300'}`}>
                         {m}
                       </span>
                     ))}

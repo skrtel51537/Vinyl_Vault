@@ -141,12 +141,12 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     }
   };
 
-  const inputClass = "w-full bg-white border border-stone-300 rounded-sm px-4 py-2.5 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
+  const inputClass = "w-full bg-paper border border-stone-300 rounded-sm px-4 py-2.5 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
   const labelClass = "text-xs font-bold text-stone-500 uppercase tracking-wider mb-1 block";
 
   const Container = embedded ? React.Fragment : 'div';
   const containerProps = embedded ? {} : { className: "max-w-4xl mx-auto p-6 pb-24 animate-fade-in-up" };
-  const cardClass = embedded ? "" : "bg-[#fcfaf9] border border-stone-200 rounded-xl p-8 shadow-2xl relative overflow-hidden";
+  const cardClass = embedded ? "" : "bg-cream border border-stone-200 rounded-xl p-8 shadow-2xl relative overflow-hidden";
 
   return (
     <Container {...containerProps}>
@@ -192,7 +192,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-stone-300 rounded-sm text-sm font-bold text-stone-600 hover:bg-stone-50 hover:border-amber-500 transition-colors">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-paper border border-stone-300 rounded-sm text-sm font-bold text-stone-600 hover:bg-stone-50 hover:border-amber-500 transition-colors">
                       <Upload className="w-4 h-4" />
                       Upload File
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -237,7 +237,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
           </div>
 
           {/* Conditions Panel */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-5 bg-amber-50/50 rounded-sm border border-amber-100">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-5 bg-amber-50/50 rounded-sm border border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50">
             <div>
               <label className={labelClass}>Sleeve</label>
               <select name="conditionSleeve" value={formData.conditionSleeve} onChange={handleChange} className={inputClass}>
@@ -299,7 +299,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
                   onClick={() => toggleMood(m)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${moods.includes(m)
                     ? 'bg-amber-800 border-amber-800 text-white'
-                    : 'bg-white border-stone-300 text-stone-600 hover:border-amber-500'}`}
+                    : 'bg-paper border-stone-300 text-stone-600 hover:border-amber-500'}`}
                 >
                   {m}
                 </button>

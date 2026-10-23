@@ -153,7 +153,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
       {onBack && (
         <button
           onClick={onBack}
-          className="absolute top-0 left-0 m-6 text-stone-500 hover:text-[#78350f] flex items-center gap-2 font-bold transition-colors z-50 cursor-pointer"
+          className="absolute top-0 left-0 m-6 text-stone-500 hover:text-accent flex items-center gap-2 font-bold transition-colors z-50 cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" /> Back to Home
         </button>
@@ -169,7 +169,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         <Trash2 className="w-3 h-3" /> Clear Database
       </button>
 
-      <div className="max-w-xl w-full text-center space-y-8 bg-white p-10 rounded-xl shadow-xl border border-stone-200">
+      <div className="max-w-xl w-full text-center space-y-8 bg-paper p-10 rounded-xl shadow-xl border border-stone-200">
         <div>
           <h1 className="text-4xl font-serif font-bold text-stone-800 mb-3">Import Collection</h1>
           <p className="text-stone-500 font-light text-lg">Bring your Excel crate into the listening room.</p>
@@ -183,7 +183,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
             border-2 border-dashed rounded-xl p-12 transition-all duration-300
             flex flex-col items-center justify-center space-y-4 cursor-pointer
             ${isDragging
-              ? 'border-amber-600 bg-amber-50'
+              ? 'border-amber-600 bg-amber-50 dark:bg-amber-950/30'
               : 'border-stone-300 hover:border-amber-500 bg-stone-50 hover:bg-stone-100'}
           `}
         >
@@ -195,14 +195,14 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
 
           <div className="text-center">
             {isProcessing ? (
-              <p className="text-lg font-medium text-amber-800">Processing...</p>
+              <p className="text-lg font-medium text-amber-800 dark:text-amber-400">Processing...</p>
             ) : (
               <>
                 <p className="text-lg font-bold text-stone-700">
                   Drop Excel file here
                 </p>
                 <p className="text-sm text-stone-500 mt-2">
-                  or <label className="text-amber-700 hover:text-amber-800 cursor-pointer font-bold hover:underline decoration-amber-600/50">
+                  or <label className="text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 cursor-pointer font-bold hover:underline decoration-amber-600/50">
                     browse local files
                     <input type="file" className="hidden" accept=".xlsx,.xls" onChange={handleFileInput} />
                   </label>
@@ -213,7 +213,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-sm border border-red-200 text-sm">
+          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-sm border border-red-200 text-sm dark:bg-red-950/40 dark:text-red-300 dark:border-red-900">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <p>{error}</p>
           </div>
@@ -233,7 +233,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         </div>
 
         {/* Backup/Restore Section */}
-        <div className="bg-linear-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+        <div className="bg-linear-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 p-6 rounded-xl border border-amber-200 dark:border-amber-900/60">
           <p className="text-sm text-stone-600 mb-4">
             Create a complete backup including all metadata, <strong>cover images</strong> and your wishlist. Use this to safely transfer your collection or protect against data loss.
           </p>
@@ -246,7 +246,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
               <Download className="w-5 h-5" />
               Full Backup
             </button>
-            <label className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-stone-50 text-amber-800 font-bold rounded-lg shadow-md border border-amber-300 transition-all cursor-pointer">
+            <label className="flex items-center gap-2 px-5 py-2.5 bg-paper hover:bg-stone-50 text-amber-800 dark:text-amber-300 font-bold rounded-lg shadow-md border border-amber-300 dark:border-amber-800 transition-all cursor-pointer">
               <UploadCloud className="w-5 h-5" />
               Restore Backup
               <input
@@ -262,7 +262,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
           <p className="text-xs text-stone-500 mt-3">
             Full Backup exports: Excel (.xlsx) + JSON with covers (.json)
           </p>
-          <p className={`text-xs mt-1 ${isBackupOverdue(lastBackup) ? 'text-amber-800 font-bold' : 'text-stone-500'}`}>
+          <p className={`text-xs mt-1 ${isBackupOverdue(lastBackup) ? 'text-amber-800 dark:text-amber-400 font-bold' : 'text-stone-500'}`}>
             {lastBackup
               ? `Last backup: ${lastBackup.toLocaleDateString()} (${describeBackupAge(lastBackup)})`
               : 'No backup made from this browser yet.'}

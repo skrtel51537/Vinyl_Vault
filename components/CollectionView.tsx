@@ -160,7 +160,7 @@ const CollectionView: React.FC = () => {
 
 
     const activeInputClass = "bg-[#78350f] text-white border-[#78350f]";
-    const inactiveInputClass = "bg-white border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-[#78350f]";
+    const inactiveInputClass = "bg-paper border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-[#78350f]";
 
     if (!allVinyls) return <div className="p-12 text-center text-stone-500 font-serif italic text-lg">Dusting off the collection...</div>;
 
@@ -168,10 +168,10 @@ const CollectionView: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 min-h-[calc(100vh-100px)]" onClick={() => setShowSortMenu(false)}>
 
             {/* Search Header */}
-            <div className="bg-white p-5 rounded-lg border border-[#78350f] shadow-md flex flex-col md:flex-row gap-6 items-center justify-between z-20 relative">
+            <div className="bg-paper p-5 rounded-lg border border-[#78350f] shadow-md flex flex-col md:flex-row gap-6 items-center justify-between z-20 relative">
                 <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-stone-100 rounded-full border border-stone-200 flex items-center justify-center">
-                        <Music className="text-[#78350f] w-7 h-7" />
+                        <Music className="text-accent w-7 h-7" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-stone-800 font-serif">Shelf Browser</h1>
@@ -181,11 +181,11 @@ const CollectionView: React.FC = () => {
 
                 <div className="flex-1 w-full md:max-w-xl flex gap-3">
                     <div className="relative flex-1 group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 group-focus-within:text-[#78350f] transition-colors" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 group-focus-within:text-accent transition-colors" />
                         <input
                             type="text"
                             placeholder="Find in crate (artist, album, genre, year, track...)"
-                            className="w-full bg-stone-50 border border-stone-300 text-stone-800 pl-10 pr-4 py-3 rounded-sm focus:outline-hidden focus:border-[#78350f] focus:ring-1 focus:ring-[#78350f]/20 transition-all placeholder-stone-400 text-sm font-medium"
+                            className="w-full bg-stone-50 border border-stone-300 text-stone-800 pl-10 pr-4 py-3 rounded-sm focus:outline-hidden focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all placeholder-stone-400 text-sm font-medium"
                             value={filters.search}
                             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                         />
@@ -201,7 +201,7 @@ const CollectionView: React.FC = () => {
                             <ArrowUpDown className="w-5 h-5" />
                         </button>
                         {showSortMenu && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-[#78350f] overflow-hidden z-50 animate-fade-in">
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-paper rounded-lg shadow-xl border border-[#78350f] overflow-hidden z-50 animate-fade-in">
                                 <div className="bg-[#451a03] px-4 py-2 text-xs font-bold text-amber-50 uppercase tracking-wider">
                                     Sort By
                                 </div>
@@ -211,8 +211,8 @@ const CollectionView: React.FC = () => {
                                         onClick={() => setSortOption(opt.id)}
                                         className="w-full text-left px-4 py-3 text-sm text-stone-700 hover:bg-stone-100 flex items-center justify-between group"
                                     >
-                                        <span className={sortOption === opt.id ? "font-bold text-[#78350f]" : ""}>{opt.label}</span>
-                                        {sortOption === opt.id && <Check className="w-4 h-4 text-[#78350f]" />}
+                                        <span className={sortOption === opt.id ? "font-bold text-accent" : ""}>{opt.label}</span>
+                                        {sortOption === opt.id && <Check className="w-4 h-4 text-accent" />}
                                     </button>
                                 ))}
                             </div>
@@ -240,7 +240,7 @@ const CollectionView: React.FC = () => {
                     <button
                         onClick={scanCollection}
                         disabled={isScanning}
-                        className={`p-3 rounded-sm border transition-all ${isScanning ? 'bg-amber-100 border-amber-300 text-amber-800' : inactiveInputClass}`}
+                        className={`p-3 rounded-sm border transition-all ${isScanning ? 'bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300' : inactiveInputClass}`}
                         title={isScanning ? scanProgress : "Scan Collection for Missing Art"}
                     >
                         {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
@@ -274,9 +274,9 @@ const CollectionView: React.FC = () => {
                 >
                     {/* Artist Filter */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Artist</label>
+                        <label className="text-xs font-bold text-accent uppercase tracking-wider">Artist</label>
                         <select
-                            className="w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                            className="w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
                             value={filters.artist || ''}
                             onChange={(e) => setFilters(prev => ({ ...prev, artist: e.target.value || null }))}
                         >
@@ -289,9 +289,9 @@ const CollectionView: React.FC = () => {
 
                     {/* Genre Filter */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Genre</label>
+                        <label className="text-xs font-bold text-accent uppercase tracking-wider">Genre</label>
                         <select
-                            className="w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                            className="w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
                             value={filters.genre || ''}
                             onChange={(e) => setFilters(prev => ({ ...prev, genre: e.target.value || null }))}
                         >
@@ -304,9 +304,9 @@ const CollectionView: React.FC = () => {
 
                     {/* Release Year Filter */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Release Year</label>
+                        <label className="text-xs font-bold text-accent uppercase tracking-wider">Release Year</label>
                         <select
-                            className="w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                            className="w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
                             value={filters.releaseYear || ''}
                             onChange={(e) => setFilters(prev => ({ ...prev, releaseYear: e.target.value ? parseInt(e.target.value) : null }))}
                         >
@@ -319,9 +319,9 @@ const CollectionView: React.FC = () => {
 
                     {/* Collection Filter */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Collection</label>
+                        <label className="text-xs font-bold text-accent uppercase tracking-wider">Collection</label>
                         <select
-                            className="w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                            className="w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
                             value={filters.collection || ''}
                             onChange={(e) => setFilters(prev => ({ ...prev, collection: e.target.value || null }))}
                         >
@@ -335,9 +335,9 @@ const CollectionView: React.FC = () => {
                     {/* Condition Filters */}
                     <div className="md:col-span-2 flex gap-4">
                         <div className="flex-1 space-y-2">
-                            <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Sleeve Condition</label>
+                            <label className="text-xs font-bold text-accent uppercase tracking-wider">Sleeve Condition</label>
                             <select
-                                className="w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                                className="w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
                                 value={filters.conditionSleeve || ''}
                                 onChange={(e) => setFilters(prev => ({ ...prev, conditionSleeve: e.target.value || null }))}
                             >
@@ -348,9 +348,9 @@ const CollectionView: React.FC = () => {
                             </select>
                         </div>
                         <div className="flex-1 space-y-2">
-                            <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Media Condition</label>
+                            <label className="text-xs font-bold text-accent uppercase tracking-wider">Media Condition</label>
                             <select
-                                className="w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-[#78350f]"
+                                className="w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-sm text-stone-700 focus:outline-hidden focus:border-accent"
                                 value={filters.conditionMedia || ''}
                                 onChange={(e) => setFilters(prev => ({ ...prev, conditionMedia: e.target.value || null }))}
                             >
@@ -364,8 +364,8 @@ const CollectionView: React.FC = () => {
 
                     {/* Sale Status */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#78350f] uppercase tracking-wider">Status</label>
-                        <div className="flex bg-white rounded-sm border border-stone-300 p-0.5">
+                        <label className="text-xs font-bold text-accent uppercase tracking-wider">Status</label>
+                        <div className="flex bg-paper rounded-sm border border-stone-300 p-0.5">
                             {[
                                 { label: 'All', value: null },
                                 { label: 'Keep', value: false },
@@ -387,7 +387,7 @@ const CollectionView: React.FC = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setFilters({ search: '', genre: null, artist: null, collection: null, releaseYear: null, conditionSleeve: null, conditionMedia: null, toBeSold: null })}
-                                className="text-xs text-[#78350f] hover:text-[#451a03] hover:underline underline-offset-4 px-2 font-bold"
+                                className="text-xs text-accent hover:text-accent-strong hover:underline underline-offset-4 px-2 font-bold"
                             >
                                 Reset Filters
                             </button>
@@ -422,7 +422,7 @@ const CollectionView: React.FC = () => {
                     <p className="text-2xl font-serif text-stone-500 italic">No records found on the shelf.</p>
                     <button
                         onClick={() => setFilters({ search: '', genre: null, artist: null, collection: null, releaseYear: null, conditionSleeve: null, conditionMedia: null, toBeSold: null })}
-                        className="mt-6 text-[#78350f] hover:text-[#451a03] text-sm font-bold uppercase tracking-widest border-b-2 border-[#78350f]/30 hover:border-[#78350f] transition-all"
+                        className="mt-6 text-accent hover:text-accent-strong text-sm font-bold uppercase tracking-widest border-b-2 border-[#78350f]/30 hover:border-[#78350f] transition-all"
                     >
                         Clear Search
                     </button>

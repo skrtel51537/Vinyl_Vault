@@ -75,7 +75,7 @@ const WishlistForm: React.FC<WishlistFormProps> = ({ item, onClose }) => {
     }
   };
 
-  const inputClass = "w-full bg-white border border-stone-300 rounded-sm px-3 py-2 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
+  const inputClass = "w-full bg-paper border border-stone-300 rounded-sm px-3 py-2 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
   const labelClass = "text-xs font-bold text-stone-500 uppercase tracking-wider mb-1 block";
 
   return (
@@ -87,7 +87,7 @@ const WishlistForm: React.FC<WishlistFormProps> = ({ item, onClose }) => {
         aria-modal="true"
         aria-labelledby="wishlist-form-title"
         tabIndex={-1}
-        className="bg-[#fcfaf9] w-full max-w-2xl max-h-[92vh] rounded-lg shadow-2xl overflow-hidden flex flex-col border-4 border-[#78350f] outline-hidden"
+        className="bg-cream w-full max-w-2xl max-h-[92vh] rounded-lg shadow-2xl overflow-hidden flex flex-col border-4 border-[#78350f] outline-hidden"
       >
         <div className="bg-[#451a03] p-4 flex justify-between items-center border-b border-[#78350f] shrink-0">
           <h2 id="wishlist-form-title" className="text-xl font-serif font-bold text-amber-50 flex items-center gap-2">
@@ -158,10 +158,10 @@ const WishlistView: React.FC<WishlistViewProps> = ({ onAcquire }) => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="bg-white p-5 rounded-lg border border-[#78350f] shadow-md flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="bg-paper p-5 rounded-lg border border-[#78350f] shadow-md flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 bg-stone-100 rounded-full border border-stone-200 flex items-center justify-center">
-            <Heart className="text-[#78350f] w-7 h-7" />
+            <Heart className="text-accent w-7 h-7" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-stone-800 font-serif">Wishlist</h1>
@@ -190,13 +190,13 @@ const WishlistView: React.FC<WishlistViewProps> = ({ onAcquire }) => {
             const link = sanitizeExternalLink(item.discogsLink);
             const details = [item.label, item.catNumber, item.releaseYear].filter(Boolean).join(' · ');
             return (
-              <li key={item.id} className="relative bg-white rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow overflow-hidden">
+              <li key={item.id} className="relative bg-paper rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow overflow-hidden">
                 <div className={`absolute inset-y-0 left-0 w-1.5 ${priorityStyles[item.priority].bar}`} aria-hidden="true" />
                 <div className="pl-6 pr-4 py-4 flex flex-col md:flex-row md:items-center gap-4">
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <h2 className="text-lg font-serif font-bold text-stone-900 leading-tight">{item.album}</h2>
-                      <span className="text-[#78350f] font-medium">{item.artist}</span>
+                      <span className="text-accent font-medium">{item.artist}</span>
                     </div>
                     {details && <p className="text-sm text-stone-500 font-mono">{details}</p>}
                     {item.notes && <p className="text-sm text-stone-600 italic">{item.notes}</p>}

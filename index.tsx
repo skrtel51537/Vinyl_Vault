@@ -11,6 +11,10 @@ import '@fontsource-variable/inter/opsz.css';
 import '@fontsource-variable/playfair-display/index.css';
 import '@fontsource-variable/playfair-display/wght-italic.css';
 import './index.css';
+import { initTheme } from './services/theme';
+
+// Set the light/dark theme before the first render, so the app never flashes the wrong one.
+initTheme();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -22,8 +26,8 @@ root.render(
   <React.StrictMode>
     {/* Last line of defence: never leave a blank page on an unexpected render error. */}
     <ErrorBoundary fallback={() => (
-      <div role="alert" className="min-h-screen bg-[#d6d3d1] flex items-center justify-center p-6">
-        <div className="bg-white border border-[#78350f] rounded-lg shadow-md p-8 max-w-md text-center space-y-4">
+      <div role="alert" className="min-h-screen bg-page flex items-center justify-center p-6">
+        <div className="bg-paper border border-[#78350f] rounded-lg shadow-md p-8 max-w-md text-center space-y-4">
           <h1 className="text-2xl font-serif font-bold text-stone-800">Something went wrong</h1>
           <p className="text-stone-600 text-sm leading-relaxed">
             Vinyl Vault hit an unexpected error. Your collection is stored in this browser and is safe.
