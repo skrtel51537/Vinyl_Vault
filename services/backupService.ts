@@ -3,6 +3,7 @@ import { VinylRecord } from '../types';
 import { exportCollectionToExcel } from './excelService';
 import { confirmDialog, notify } from './notify';
 import { recordBackupDone } from './backupReminder';
+import { normalizeMoods } from './moods';
 
 /**
  * Backup file format interface
@@ -86,6 +87,7 @@ export const normalizeRecord = (raw: unknown): VinylRecord | null => {
   const addedAt = new Date(toStr(r.addedAt));
   const coverUrl = toStr(r.coverUrl);
   const dominantColor = toStr(r.dominantColor);
+  const moods = normalizeMoods(r.moods);
 
   return {
     artist: artist || 'Unknown Artist',
@@ -107,6 +109,7 @@ export const normalizeRecord = (raw: unknown): VinylRecord | null => {
     // Only keep covers the app can actually display (embedded images or HTTPS URLs).
     ...(/^(data:image\/|https:\/\/)/.test(coverUrl) ? { coverUrl } : {}),
     ...(/^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/.test(dominantColor) ? { dominantColor } : {}),
+    ...(moods.length > 0 ? { moods } : {}),
     addedAt: isNaN(addedAt.getTime()) ? new Date() : addedAt,
   };
 };

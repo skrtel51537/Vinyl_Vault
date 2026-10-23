@@ -18,8 +18,11 @@ export interface VinylRecord {
   toBeSold: boolean;
   coverUrl?: string; // Optional field for the fetched cover
   dominantColor?: string; // Extracted color from cover
+  moods?: Mood[]; // Set by hand; when absent, moods are guessed from genre/decade
   addedAt: Date;
 }
+
+export type Mood = 'Relax' | 'Energy' | 'Night' | 'Party' | 'Melancholy';
 
 export enum ViewMode {
   GRID = 'GRID',

@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useDeferredValue } from 'react';
+import React, { useState, useMemo, useDeferredValue, useCallback, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
 import VinylCard from './VinylCard';
 import VinylTable from './VinylTable';
 import VinylDetailModal from './VinylDetailModal';
+import TonightPicker from './TonightPicker';
 import { FilterState, VinylRecord, ViewMode } from '../types';
-import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2, LayoutGrid, List } from 'lucide-react';
+import { Search, Filter, Music, Disc, ArrowUpDown, Check, ImagePlus, Loader2, LayoutGrid, List, Sparkles } from 'lucide-react';
 import { findAlbumCover } from '../services/itunesService';
 import { confirmDialog, notify } from '../services/notify';
 import { filterAndSortVinyls, SortOption } from '../services/collectionFilter';
@@ -31,6 +32,10 @@ const CollectionView: React.FC = () => {
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [sortOption, setSortOption] = useState<SortOption>('added_desc');
     const [selectedRecord, setSelectedRecord] = useState<VinylRecord | null>(null);
+    const [showPicker, setShowPicker] = useState(false);
+    const closePicker = useCallback(() => setShowPicker(false), []);
+    // Latest "play tonight" suggestions, so reopening the picker doesn't repeat them.
+    const recentPicks = useRef<number[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode>(() =>
         localStorage.getItem('vinyl-vault-view') === ViewMode.TABLE ? ViewMode.TABLE : ViewMode.GRID
     );
@@ -224,6 +229,15 @@ const CollectionView: React.FC = () => {
 
 
                     <button
+                        onClick={(e) => { e.stopPropagation(); setShowPicker(true); setShowSortMenu(false); }}
+                        className={`p-3 rounded-sm border transition-all ${inactiveInputClass}`}
+                        title="What should I play tonight?"
+                        aria-label="What should I play tonight?"
+                    >
+                        <Sparkles className="w-5 h-5" />
+                    </button>
+
+                    <button
                         onClick={scanCollection}
                         disabled={isScanning}
                         className={`p-3 rounded-sm border transition-all ${isScanning ? 'bg-amber-100 border-amber-300 text-amber-800' : inactiveInputClass}`}
@@ -413,6 +427,15 @@ const CollectionView: React.FC = () => {
                         Clear Search
                     </button>
                 </div>
+            )}
+
+            {showPicker && (
+                <TonightPicker
+                    records={allVinyls}
+                    recentPicks={recentPicks}
+                    onClose={closePicker}
+                    onOpenRecord={(record) => { setShowPicker(false); setSelectedRecord(record); }}
+                />
             )}
 
             {/* Detail Modal */}

@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { VinylRecord } from '../types';
-import { X, Disc, Music, Calendar, Globe, Tag, DollarSign, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Disc, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2, Sparkles } from 'lucide-react';
 import { db, deleteVinylById } from '../services/db';
 import { sanitizeExternalLink } from '../services/url';
 import { confirmDialog, notify } from '../services/notify';
+import { effectiveMoods } from '../services/moods';
 import AddVinylForm from './AddVinylForm';
+import { useDialog } from './useDialog';
 
 interface VinylDetailModalProps {
   record: VinylRecord;
@@ -34,41 +36,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
   // While editing (or deleting), Escape / backdrop clicks are ignored so unsaved
   // changes are never lost to an accidental key press or click.
   const canDismiss = !isEditing && !isDeleting;
-
-  // On open: move focus into the dialog and lock background scroll.
-  // On close: restore scroll and return focus to where it was.
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, []);
-
-  // Escape closes the dialog; Tab / Shift+Tab stay inside it.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (canDismiss) { e.preventDefault(); onClose(); }
-        return;
-      }
-      if (e.key !== 'Tab' || !dialogRef.current) return;
-      const candidates: ArrayLike<HTMLElement> = dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      const focusable = Array.from(candidates).filter(el => el.offsetParent !== null);
-      if (focusable.length === 0) { e.preventDefault(); return; }
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-      if (e.shiftKey && (active === first || active === dialogRef.current)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [canDismiss, onClose]);
+  useDialog(dialogRef, onClose, canDismiss);
 
   const handleDelete = async (e: React.MouseEvent) => {
       e.preventDefault();
@@ -228,6 +196,22 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                             </span>
                         ))}
                     </div>
+
+                    {(() => {
+                        const { moods, auto } = effectiveMoods(record);
+                        if (moods.length === 0) return null;
+                        return (
+                            <div className="flex flex-wrap items-center gap-2 -mt-3" title={auto ? 'Guessed from genre and decade. Edit the record to set them by hand.' : 'Set by hand'}>
+                                <Sparkles className="w-4 h-4 text-amber-600" aria-hidden="true" />
+                                {moods.map(m => (
+                                    <span key={m} className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${auto ? 'border-dashed border-stone-300 text-stone-500' : 'border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200'}`}>
+                                        {m}
+                                    </span>
+                                ))}
+                                {auto && <span className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">auto</span>}
+                            </div>
+                        );
+                    })()}
 
                     <div className="grid grid-cols-2 gap-4 text-sm bg-white p-4 rounded-sm border border-stone-200 shadow-xs">
                         <div>

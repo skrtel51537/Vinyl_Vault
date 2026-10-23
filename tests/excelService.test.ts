@@ -26,14 +26,14 @@ describe('parseExcelFile', () => {
       'Release Year': 1977, 'Country': 'UK', 'Label': 'Harvest / EMI', 'Cat. Number': 'SHVL 815; 11EMI',
       'Condition Sleeve': 'VG', 'Condition Media': 'VG+', 'Sound Quality': 4, 'Rating': '9',
       'Best tracks': 'Dogs; Sheep', 'Others/Comments': 'Gatefold', 'Discogs link': 'https://www.discogs.com/r/1',
-      'To be sold': 'yes',
+      'To be sold': 'yes', 'Moods': 'night; party; unknown',
     }]));
 
     expect(r).toMatchObject({
       artist: 'Pink Floyd', album: 'Animals', genre: ['Rock', 'Prog'], collection: 'Main', releaseYear: 1977,
       country: 'UK', label: ['Harvest', 'EMI'], catNumber: ['SHVL 815', '11EMI'], conditionSleeve: 'VG',
       conditionMedia: 'VG+', soundQuality: 4, rating: 9, bestTracks: ['Dogs', 'Sheep'], comments: 'Gatefold',
-      discogsLink: 'https://www.discogs.com/r/1', toBeSold: true,
+      discogsLink: 'https://www.discogs.com/r/1', toBeSold: true, moods: ['Night', 'Party'],
     });
     expect(r.addedAt).toBeInstanceOf(Date);
   });
@@ -59,7 +59,7 @@ describe('parseExcelFile', () => {
 describe('exportCollectionToExcel', () => {
   it('writes the collection in a format parseExcelFile reads back', async () => {
     const original = [
-      makeRecord({ album: 'A', genre: ['Rock', 'Pop'], label: ['EMI', 'Harvest'], toBeSold: true }),
+      makeRecord({ album: 'A', genre: ['Rock', 'Pop'], label: ['EMI', 'Harvest'], toBeSold: true, moods: ['Energy', 'Party'] }),
       makeRecord({ album: 'B', releaseYear: null, bestTracks: [] }),
     ];
 

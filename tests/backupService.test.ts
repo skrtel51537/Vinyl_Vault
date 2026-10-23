@@ -81,6 +81,12 @@ describe('normalizeRecord', () => {
     expect(bad).not.toHaveProperty('dominantColor');
     expect(normalizeRecord({ artist: 'A', coverUrl: 'http://insecure/a.jpg' })).not.toHaveProperty('coverUrl');
   });
+
+  it('keeps known moods only, and omits the field when there are none', () => {
+    expect(normalizeRecord({ artist: 'A', moods: ['night', 'Party', 'Sleepy'] })!.moods).toEqual(['Night', 'Party']);
+    expect(normalizeRecord({ artist: 'A', moods: ['Sleepy'] })).not.toHaveProperty('moods');
+    expect(normalizeRecord({ artist: 'A' })).not.toHaveProperty('moods');
+  });
 });
 
 describe('importFullBackup', () => {
