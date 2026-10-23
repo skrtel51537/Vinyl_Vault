@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as XLSX from 'xlsx';
 import { exportCollectionToExcel, parseExcelFile } from '../services/excelService';
 import { VinylRecord } from '../types';
-import { makeRecord } from './fixtures';
+import { makeRecord, makeWishlistItem } from './fixtures';
 
 // Capture the workbook instead of triggering a download.
 vi.mock('xlsx', async (importOriginal) => {
@@ -26,14 +26,14 @@ describe('parseExcelFile', () => {
       'Release Year': 1977, 'Country': 'UK', 'Label': 'Harvest / EMI', 'Cat. Number': 'SHVL 815; 11EMI',
       'Condition Sleeve': 'VG', 'Condition Media': 'VG+', 'Sound Quality': 4, 'Rating': '9',
       'Best tracks': 'Dogs; Sheep', 'Others/Comments': 'Gatefold', 'Discogs link': 'https://www.discogs.com/r/1',
-      'To be sold': 'yes',
+      'To be sold': 'yes', 'Moods': 'night; party; unknown',
     }]));
 
     expect(r).toMatchObject({
       artist: 'Pink Floyd', album: 'Animals', genre: ['Rock', 'Prog'], collection: 'Main', releaseYear: 1977,
       country: 'UK', label: ['Harvest', 'EMI'], catNumber: ['SHVL 815', '11EMI'], conditionSleeve: 'VG',
       conditionMedia: 'VG+', soundQuality: 4, rating: 9, bestTracks: ['Dogs', 'Sheep'], comments: 'Gatefold',
-      discogsLink: 'https://www.discogs.com/r/1', toBeSold: true,
+      discogsLink: 'https://www.discogs.com/r/1', toBeSold: true, moods: ['Night', 'Party'],
     });
     expect(r.addedAt).toBeInstanceOf(Date);
   });
@@ -59,7 +59,7 @@ describe('parseExcelFile', () => {
 describe('exportCollectionToExcel', () => {
   it('writes the collection in a format parseExcelFile reads back', async () => {
     const original = [
-      makeRecord({ album: 'A', genre: ['Rock', 'Pop'], label: ['EMI', 'Harvest'], toBeSold: true }),
+      makeRecord({ album: 'A', genre: ['Rock', 'Pop'], label: ['EMI', 'Harvest'], toBeSold: true, moods: ['Energy', 'Party'] }),
       makeRecord({ album: 'B', releaseYear: null, bestTracks: [] }),
     ];
 
@@ -74,5 +74,24 @@ describe('exportCollectionToExcel', () => {
     // The Excel file holds metadata only: no id, cover, color or date added.
     const metadata = ({ id: _id, addedAt: _addedAt, coverUrl: _cover, dominantColor: _color, ...rest }: VinylRecord) => rest;
     expect(parsed.map(metadata)).toEqual(original.map(metadata));
+    expect(workbook.SheetNames).toEqual(['Collection']);
+  });
+
+  it('adds the wishlist on its own sheet, which import ignores', async () => {
+    const wishes = [
+      makeWishlistItem({ album: 'Low one', priority: 'low', maxPrice: null }),
+      makeWishlistItem({ album: 'Top one', priority: 'high', maxPrice: 19.99 }),
+    ];
+    await exportCollectionToExcel([makeRecord()], wishes);
+
+    const [workbook] = vi.mocked(XLSX.writeFile).mock.calls[0];
+    expect(workbook.SheetNames).toEqual(['Collection', 'Wishlist']);
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets['Wishlist']);
+    expect(rows.map(r => r['Album'])).toEqual(['Top one', 'Low one']);
+    expect(rows[0]).toMatchObject({ 'Artist': 'John Coltrane', 'Priority': 'High', 'Max price': 19.99, 'Added': '2025-02-01' });
+
+    const data = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+    const parsed = await parseExcelFile(new File([data], 'roundtrip.xlsx'));
+    expect(parsed.map(r => r.album)).toEqual(['Kind of Blue']);
   });
 });

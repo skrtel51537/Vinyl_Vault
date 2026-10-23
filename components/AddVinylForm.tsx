@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { VinylRecord } from '../types';
-import { db } from '../services/db';
+import { Mood, VinylRecord } from '../types';
+import { db, moveWishlistItemToCollection } from '../services/db';
 import { notify } from '../services/notify';
 import { resizeImageFile, UPLOADED_COVER_SIZE } from '../services/image';
+import { autoMoods, MOODS } from '../services/moods';
 import { Save, X, PlusCircle, Edit, Upload, Image } from 'lucide-react';
 
 interface AddVinylFormProps {
@@ -10,9 +11,12 @@ interface AddVinylFormProps {
   onSave: () => void;
   initialValues?: VinylRecord; // Optional: if provided, we are in Edit mode
   embedded?: boolean; // Optional: removes outer container styling for modal use
+  prefill?: Partial<VinylRecord>; // Optional: starting values for a new record (e.g. from the wishlist)
+  wishlistItemId?: number; // Optional: on save, this wishlist item moves to the collection
 }
 
-const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialValues, embedded = false }) => {
+const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialValues, embedded = false, prefill, wishlistItemId }) => {
+  const start = initialValues ?? prefill;
   const [formData, setFormData] = useState<Partial<VinylRecord>>(initialValues || {
     artist: '',
     album: '',
@@ -31,18 +35,28 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     discogsLink: '',
     coverUrl: '',
     toBeSold: false,
+    ...prefill,
   });
 
-  // Initialize string states from arrays if in edit mode
-  const [genreStr, setGenreStr] = useState(initialValues?.genre?.join('; ') || '');
-  const [labelStr, setLabelStr] = useState(initialValues?.label?.join('; ') || '');
-  const [catStr, setCatStr] = useState(initialValues?.catNumber?.join('; ') || '');
-  const [tracksStr, setTracksStr] = useState(initialValues?.bestTracks?.join('; ') || '');
+  // Initialize string states from arrays if in edit mode (or pre-filled)
+  const [genreStr, setGenreStr] = useState(start?.genre?.join('; ') || '');
+  const [labelStr, setLabelStr] = useState(start?.label?.join('; ') || '');
+  const [catStr, setCatStr] = useState(start?.catNumber?.join('; ') || '');
+  const [tracksStr, setTracksStr] = useState(start?.bestTracks?.join('; ') || '');
   const [releaseYearStr, setReleaseYearStr] = useState(
-    initialValues?.releaseYear !== undefined
-      ? (initialValues.releaseYear === null ? '-' : initialValues.releaseYear.toString())
+    start?.releaseYear !== undefined
+      ? (start.releaseYear === null ? '-' : start.releaseYear.toString())
       : new Date().getFullYear().toString()
   );
+  const [moods, setMoods] = useState<Mood[]>(initialValues?.moods ?? []);
+
+  const splitList = (text: string) => text.split(';').map(s => s.trim()).filter(Boolean);
+  const parseYear = (text: string) => (text === '-' || text.trim() === '') ? null : parseInt(text);
+  // What the picker will use while no mood is set by hand.
+  const guessedMoods = autoMoods({ genre: splitList(genreStr), releaseYear: parseYear(releaseYearStr) || null });
+
+  const toggleMood = (mood: Mood) =>
+    setMoods(prev => MOODS.filter(m => (m === mood) !== prev.includes(m)));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -91,21 +105,23 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
       // Form values
       artist: formData.artist!,
       album: formData.album!,
-      genre: genreStr.split(';').map(s => s.trim()).filter(Boolean),
+      genre: splitList(genreStr),
       collection: formData.collection || '',
-      releaseYear: (releaseYearStr === '-' || releaseYearStr.trim() === '') ? null : parseInt(releaseYearStr),
+      releaseYear: parseYear(releaseYearStr),
       country: formData.country || '-',
-      label: labelStr.split(';').map(s => s.trim()).filter(Boolean),
-      catNumber: catStr.split(';').map(s => s.trim()).filter(Boolean),
+      label: splitList(labelStr),
+      catNumber: splitList(catStr),
       conditionSleeve: formData.conditionSleeve || '',
       conditionMedia: formData.conditionMedia || '',
       soundQuality: formData.soundQuality || 0,
       rating: formData.rating || 0,
-      bestTracks: tracksStr.split(';').map(s => s.trim()).filter(Boolean),
+      bestTracks: splitList(tracksStr),
       comments: formData.comments || '',
       discogsLink: formData.discogsLink || '',
       toBeSold: formData.toBeSold || false,
       coverUrl: formData.coverUrl,
+      // No manual moods: drop the field so they are guessed again.
+      moods: moods.length > 0 ? moods : undefined,
       // A new cover needs a new accent color (recomputed by the card).
       ...(initialValues && formData.coverUrl !== initialValues.coverUrl ? { dominantColor: undefined } : {}),
     } as VinylRecord;
@@ -113,6 +129,8 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     try {
       if (initialValues?.id) {
         await db.vinyls.update(initialValues.id, recordData as any);
+      } else if (wishlistItemId !== undefined) {
+        await moveWishlistItemToCollection(wishlistItemId, recordData);
       } else {
         await db.vinyls.add(recordData);
       }
@@ -123,12 +141,12 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
     }
   };
 
-  const inputClass = "w-full bg-white border border-stone-300 rounded-sm px-4 py-2.5 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
+  const inputClass = "w-full bg-paper border border-stone-300 rounded-sm px-4 py-2.5 text-stone-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-hidden transition-colors placeholder-stone-400";
   const labelClass = "text-xs font-bold text-stone-500 uppercase tracking-wider mb-1 block";
 
   const Container = embedded ? React.Fragment : 'div';
   const containerProps = embedded ? {} : { className: "max-w-4xl mx-auto p-6 pb-24 animate-fade-in-up" };
-  const cardClass = embedded ? "" : "bg-[#fcfaf9] border border-stone-200 rounded-xl p-8 shadow-2xl relative overflow-hidden";
+  const cardClass = embedded ? "" : "bg-cream border border-stone-200 rounded-xl p-8 shadow-2xl relative overflow-hidden";
 
   return (
     <Container {...containerProps}>
@@ -140,7 +158,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
         <div className="flex justify-between items-center mb-8 border-b border-stone-200 pb-4 mt-2">
           <h2 className="text-3xl font-serif font-bold text-stone-800 flex items-center gap-3">
             {initialValues ? <Edit className="text-amber-700" /> : <PlusCircle className="text-amber-700" />}
-            {initialValues ? 'Edit Record' : 'New Entry'}
+            {initialValues ? 'Edit Record' : wishlistItemId !== undefined ? 'Got it! New Entry' : 'New Entry'}
           </h2>
           {!embedded && (
             <button onClick={onCancel} className="text-stone-400 hover:text-stone-700 transition-colors">
@@ -174,7 +192,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-stone-300 rounded-sm text-sm font-bold text-stone-600 hover:bg-stone-50 hover:border-amber-500 transition-colors">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-paper border border-stone-300 rounded-sm text-sm font-bold text-stone-600 hover:bg-stone-50 hover:border-amber-500 transition-colors">
                       <Upload className="w-4 h-4" />
                       Upload File
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -219,7 +237,7 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
           </div>
 
           {/* Conditions Panel */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-5 bg-amber-50/50 rounded-sm border border-amber-100">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-5 bg-amber-50/50 rounded-sm border border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/50">
             <div>
               <label className={labelClass}>Sleeve</label>
               <select name="conditionSleeve" value={formData.conditionSleeve} onChange={handleChange} className={inputClass}>
@@ -269,6 +287,30 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
             <label className={labelClass}>Comments</label>
             <textarea name="comments" rows={3} value={formData.comments} onChange={handleChange} className={inputClass} />
           </div>
+
+          <fieldset>
+            <legend className={labelClass}>Moods</legend>
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={moods.includes(m)}
+                  onClick={() => toggleMood(m)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${moods.includes(m)
+                    ? 'bg-amber-800 border-amber-800 text-white'
+                    : 'bg-paper border-stone-300 text-stone-600 hover:border-amber-500'}`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-stone-400 mt-1.5">
+              {moods.length > 0
+                ? 'Set by hand. Unselect them all to let the app guess from genre and decade.'
+                : `None selected: guessed from genre and decade (${guessedMoods.join(', ') || 'no match, only "Surprise me"'}).`}
+            </p>
+          </fieldset>
 
           <div className="flex items-center gap-3 p-4 border border-stone-200 rounded-sm bg-stone-50 w-max">
             <input type="checkbox" id="toBeSold" name="toBeSold" checked={formData.toBeSold} onChange={handleChange} className="w-5 h-5 accent-amber-600 rounded-sm cursor-pointer" />

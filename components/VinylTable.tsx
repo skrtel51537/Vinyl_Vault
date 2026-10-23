@@ -11,7 +11,7 @@ interface VinylTableProps {
 
 const VinylTable: React.FC<VinylTableProps> = ({ records, onRowClick }) => {
   return (
-    <div className="bg-white rounded-lg border border-[#78350f] shadow-md overflow-hidden">
+    <div className="bg-paper rounded-lg border border-[#78350f] shadow-md overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-[#451a03] text-amber-50">
@@ -35,7 +35,7 @@ const VinylTable: React.FC<VinylTableProps> = ({ records, onRowClick }) => {
                 <tr
                   key={record.id}
                   onClick={() => onRowClick(record)}
-                  className="hover:bg-amber-50/60 cursor-pointer transition-colors"
+                  className="hover:bg-amber-50/60 dark:hover:bg-amber-950/30 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-2">
                     <div
@@ -53,8 +53,8 @@ const VinylTable: React.FC<VinylTableProps> = ({ records, onRowClick }) => {
                   <td className="px-4 py-2 text-stone-600">{record.artist}</td>
                   <td className="px-4 py-2 text-stone-500 font-mono">{record.releaseYear || '—'}</td>
                   <td className="px-4 py-2 text-stone-500">{record.genre.slice(0, 2).join(', ') || '—'}</td>
-                  <td className="px-4 py-2 text-center font-bold text-[#78350f]">{record.rating > 0 ? record.rating : '—'}</td>
-                  <td className="px-4 py-2 text-center text-cyan-700 font-semibold">{record.soundQuality > 0 ? record.soundQuality : '—'}</td>
+                  <td className="px-4 py-2 text-center font-bold text-accent">{record.rating > 0 ? record.rating : '—'}</td>
+                  <td className="px-4 py-2 text-center text-cyan-700 dark:text-cyan-400 font-semibold">{record.soundQuality > 0 ? record.soundQuality : '—'}</td>
                   <td className="px-4 py-2 text-center text-stone-600">{record.conditionMedia || '—'}</td>
                   <td className="px-4 py-2 text-center">
                     {record.toBeSold ? (

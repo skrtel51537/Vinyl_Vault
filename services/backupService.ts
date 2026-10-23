@@ -1,8 +1,10 @@
 import { db } from './db';
-import { VinylRecord } from '../types';
+import { VinylRecord, WishlistItem } from '../types';
 import { exportCollectionToExcel } from './excelService';
 import { confirmDialog, notify } from './notify';
 import { recordBackupDone } from './backupReminder';
+import { normalizeMoods } from './moods';
+import { normalizePriority, parsePrice } from './wishlist';
 
 /**
  * Backup file format interface
@@ -12,6 +14,7 @@ interface VinylVaultBackup {
   exportDate: string;
   recordCount: number;
   records: VinylRecord[];
+  wishlist?: WishlistItem[]; // Since backup format 1.2.0 (app 1.5.0)
 }
 
 /**
@@ -19,22 +22,23 @@ interface VinylVaultBackup {
  * Downloads both an Excel file (metadata only) and a JSON file (full data with images).
  */
 export const exportFullBackup = async (): Promise<void> => {
-  const records = await db.vinyls.toArray();
-  
-  if (records.length === 0) {
+  const [records, wishlist] = await Promise.all([db.vinyls.toArray(), db.wishlist.toArray()]);
+
+  if (records.length === 0 && wishlist.length === 0) {
     notify('No records to back up.', 'info');
     return;
   }
 
-  // 1. Export Excel (existing functionality)
-  await exportCollectionToExcel(records);
+  // 1. Export Excel (collection sheet + wishlist sheet)
+  await exportCollectionToExcel(records, wishlist);
 
   // 2. Export JSON with full data including coverUrl (Base64 images)
   const backup: VinylVaultBackup = {
-    version: '1.1.0',
+    version: '1.2.0',
     exportDate: new Date().toISOString(),
     recordCount: records.length,
     records: records,
+    wishlist: wishlist,
   };
 
   const jsonString = JSON.stringify(backup, null, 2);
@@ -51,7 +55,9 @@ export const exportFullBackup = async (): Promise<void> => {
   URL.revokeObjectURL(url);
   recordBackupDone();
 
-  notify(`Backup complete: ${records.length} records exported.\nDownloaded an Excel file (metadata) and a JSON file (full backup with covers).`, 'success');
+  notify(`Backup complete: ${records.length} records` +
+    (wishlist.length > 0 ? ` and ${wishlist.length} wishlist item${wishlist.length === 1 ? '' : 's'}` : '') +
+    ` exported.\nDownloaded an Excel file (metadata) and a JSON file (full backup with covers).`, 'success');
 };
 
 const toStr = (v: unknown, fallback = ''): string =>
@@ -68,6 +74,16 @@ const toInt = (v: unknown, min: number, max: number): number => {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : 0;
 };
 
+const toYear = (v: unknown): number | null => {
+  const year = v === null || v === undefined ? NaN : Number(v);
+  return Number.isInteger(year) && year > 0 ? year : null;
+};
+
+const toDate = (v: unknown): Date => {
+  const date = new Date(toStr(v));
+  return isNaN(date.getTime()) ? new Date() : date;
+};
+
 /**
  * Coerce an untrusted backup entry into a well-formed VinylRecord.
  * Returns null for entries that are not objects or lack both artist and album.
@@ -82,17 +98,16 @@ export const normalizeRecord = (raw: unknown): VinylRecord | null => {
   const album = toStr(r.album).trim();
   if (!artist && !album) return null;
 
-  const year = r.releaseYear === null || r.releaseYear === undefined ? NaN : Number(r.releaseYear);
-  const addedAt = new Date(toStr(r.addedAt));
   const coverUrl = toStr(r.coverUrl);
   const dominantColor = toStr(r.dominantColor);
+  const moods = normalizeMoods(r.moods);
 
   return {
     artist: artist || 'Unknown Artist',
     album: album || 'Unknown Album',
     genre: toStrArray(r.genre),
     collection: toStr(r.collection),
-    releaseYear: Number.isInteger(year) && year > 0 ? year : null,
+    releaseYear: toYear(r.releaseYear),
     country: toStr(r.country, '-') || '-',
     label: toStrArray(r.label),
     catNumber: toStrArray(r.catNumber),
@@ -107,7 +122,34 @@ export const normalizeRecord = (raw: unknown): VinylRecord | null => {
     // Only keep covers the app can actually display (embedded images or HTTPS URLs).
     ...(/^(data:image\/|https:\/\/)/.test(coverUrl) ? { coverUrl } : {}),
     ...(/^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/.test(dominantColor) ? { dominantColor } : {}),
-    addedAt: isNaN(addedAt.getTime()) ? new Date() : addedAt,
+    ...(moods.length > 0 ? { moods } : {}),
+    addedAt: toDate(r.addedAt),
+  };
+};
+
+/**
+ * Coerce an untrusted backup wishlist entry into a well-formed WishlistItem.
+ * Returns null for entries that are not objects or lack both artist and album.
+ */
+export const normalizeWishlistItem = (raw: unknown): WishlistItem | null => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+
+  const artist = toStr(r.artist).trim();
+  const album = toStr(r.album).trim();
+  if (!artist && !album) return null;
+
+  return {
+    artist: artist || 'Unknown Artist',
+    album: album || 'Unknown Album',
+    label: toStr(r.label),
+    catNumber: toStr(r.catNumber),
+    releaseYear: toYear(r.releaseYear),
+    discogsLink: toStr(r.discogsLink),
+    notes: toStr(r.notes),
+    priority: normalizePriority(r.priority),
+    maxPrice: parsePrice(r.maxPrice),
+    addedAt: toDate(r.addedAt),
   };
 };
 
@@ -136,20 +178,30 @@ export const importFullBackup = async (file: File): Promise<boolean> => {
         const recordsToAdd = backup.records
           .map(normalizeRecord)
           .filter((r): r is VinylRecord => r !== null);
-        const skipped = backup.records.length - recordsToAdd.length;
+        // Backups made before 1.5.0 have no wishlist: the current one is then kept.
+        const rawWishlist = Array.isArray(backup.wishlist) ? backup.wishlist : null;
+        const wishlistToAdd = rawWishlist
+          ?.map(normalizeWishlistItem)
+          .filter((w): w is WishlistItem => w !== null) ?? null;
+        const skipped = backup.records.length - recordsToAdd.length +
+          (rawWishlist && wishlistToAdd ? rawWishlist.length - wishlistToAdd.length : 0);
 
-        if (recordsToAdd.length === 0) {
+        if (recordsToAdd.length === 0 && !wishlistToAdd?.length) {
           notify('This backup contains no valid records. Your collection was not changed.', 'error');
           resolve(false);
           return;
         }
 
         const exportDate = new Date(backup.exportDate);
+        const wishlistNote = wishlistToAdd
+          ? ` and ${wishlistToAdd.length} wishlist item${wishlistToAdd.length === 1 ? '' : 's'}`
+          : '';
         const confirmed = await confirmDialog(
-          `This backup contains ${recordsToAdd.length} valid records` +
+          `This backup contains ${recordsToAdd.length} valid records${wishlistNote}` +
           (isNaN(exportDate.getTime()) ? '' : ` from ${exportDate.toLocaleDateString()}`) + '.' +
           (skipped > 0 ? `\n${skipped} invalid entries will be skipped.` : '') +
-          `\n\nThis will REPLACE all current data in your collection.`,
+          `\n\nThis will REPLACE all current data in your collection${wishlistToAdd ? ' and wishlist' : ''}.` +
+          (wishlistToAdd ? '' : '\nThis backup has no wishlist: your current wishlist will be kept.'),
           { title: 'Restore backup?', confirmLabel: 'Replace collection', danger: true }
         );
 
@@ -158,13 +210,17 @@ export const importFullBackup = async (file: File): Promise<boolean> => {
           return;
         }
 
-        // Atomic replace: if bulkAdd fails, the clear() is rolled back too.
-        await db.transaction('rw', db.vinyls, async () => {
+        // Atomic replace: if any bulkAdd fails, the clear() calls are rolled back too.
+        await db.transaction('rw', db.vinyls, db.wishlist, async () => {
           await db.vinyls.clear();
           await db.vinyls.bulkAdd(recordsToAdd);
+          if (wishlistToAdd) {
+            await db.wishlist.clear();
+            await db.wishlist.bulkAdd(wishlistToAdd);
+          }
         });
 
-        notify(`Restore complete: ${recordsToAdd.length} records imported.` +
+        notify(`Restore complete: ${recordsToAdd.length} records${wishlistNote} imported.` +
           (skipped > 0 ? ` ${skipped} invalid entries were skipped.` : ''), 'success');
         resolve(true);
 

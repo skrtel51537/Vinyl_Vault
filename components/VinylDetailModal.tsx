@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { VinylRecord } from '../types';
-import { X, Disc, Music, Calendar, Globe, Tag, DollarSign, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Disc, ExternalLink, Trash2, Edit, ListMusic, MessageSquare, Loader2, Sparkles } from 'lucide-react';
 import { db, deleteVinylById } from '../services/db';
 import { sanitizeExternalLink } from '../services/url';
 import { confirmDialog, notify } from '../services/notify';
+import { effectiveMoods } from '../services/moods';
 import AddVinylForm from './AddVinylForm';
+import { useDialog } from './useDialog';
 
 interface VinylDetailModalProps {
   record: VinylRecord;
@@ -34,41 +36,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
   // While editing (or deleting), Escape / backdrop clicks are ignored so unsaved
   // changes are never lost to an accidental key press or click.
   const canDismiss = !isEditing && !isDeleting;
-
-  // On open: move focus into the dialog and lock background scroll.
-  // On close: restore scroll and return focus to where it was.
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, []);
-
-  // Escape closes the dialog; Tab / Shift+Tab stay inside it.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (canDismiss) { e.preventDefault(); onClose(); }
-        return;
-      }
-      if (e.key !== 'Tab' || !dialogRef.current) return;
-      const candidates: ArrayLike<HTMLElement> = dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      const focusable = Array.from(candidates).filter(el => el.offsetParent !== null);
-      if (focusable.length === 0) { e.preventDefault(); return; }
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-      if (e.shiftKey && (active === first || active === dialogRef.current)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [canDismiss, onClose]);
+  useDialog(dialogRef, onClose, canDismiss);
 
   const handleDelete = async (e: React.MouseEvent) => {
       e.preventDefault();
@@ -117,7 +85,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
         aria-modal="true"
         aria-labelledby="vinyl-modal-title"
         tabIndex={-1}
-        className="bg-[#fcfaf9] w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col relative border-4 border-[#78350f] outline-hidden"
+        className="bg-cream w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col relative border-4 border-[#78350f] outline-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -176,7 +144,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
             <div className={`flex flex-col md:flex-row gap-8 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
                 {/* Left Column */}
                 <div className="w-full md:w-1/3 flex flex-col gap-4">
-                    <div className="aspect-square w-full rounded-xs shadow-xl bg-white p-1 border border-stone-200 relative overflow-hidden group">
+                    <div className="aspect-square w-full rounded-xs shadow-xl bg-paper p-1 border border-stone-200 relative overflow-hidden group">
                         {record.coverUrl ? (
                             <img src={record.coverUrl} alt={record.album} className="w-full h-full object-cover" />
                         ) : (
@@ -191,10 +159,10 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                         )}
                     </div>
 
-                    <div className="bg-white p-4 rounded-sm border border-stone-200 text-center shadow-xs">
+                    <div className="bg-paper p-4 rounded-sm border border-stone-200 text-center shadow-xs">
                         <div className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Personal Rating</div>
                         <div className="flex items-center justify-center gap-1">
-                            <span className="text-4xl font-serif font-bold text-[#78350f]">
+                            <span className="text-4xl font-serif font-bold text-accent">
                                 {record.rating && record.rating > 0 ? record.rating : '-'}
                             </span>
                             <span className="text-stone-400 text-lg">/10</span>
@@ -218,18 +186,34 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                 <div className="w-full md:w-2/3 space-y-6">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-serif font-bold text-stone-900 leading-tight md:leading-10 mb-1">{record.album}</h1>
-                        <h2 className="text-xl md:text-2xl font-medium text-[#78350f]">{record.artist}</h2>
+                        <h2 className="text-xl md:text-2xl font-medium text-accent">{record.artist}</h2>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
                         {record.genre.map((g, i) => (
-                            <span key={i} className="px-3 py-1 bg-[#78350f]/10 text-[#78350f] rounded-full text-xs font-bold uppercase tracking-wider border border-[#78350f]/20">
+                            <span key={i} className="px-3 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold uppercase tracking-wider border border-accent/20">
                                 {g}
                             </span>
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm bg-white p-4 rounded-sm border border-stone-200 shadow-xs">
+                    {(() => {
+                        const { moods, auto } = effectiveMoods(record);
+                        if (moods.length === 0) return null;
+                        return (
+                            <div className="flex flex-wrap items-center gap-2 -mt-3" title={auto ? 'Guessed from genre and decade. Edit the record to set them by hand.' : 'Set by hand'}>
+                                <Sparkles className="w-4 h-4 text-amber-600" aria-hidden="true" />
+                                {moods.map(m => (
+                                    <span key={m} className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${auto ? 'border-dashed border-stone-300 text-stone-500' : 'border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200'}`}>
+                                        {m}
+                                    </span>
+                                ))}
+                                {auto && <span className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">auto</span>}
+                            </div>
+                        );
+                    })()}
+
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-paper p-4 rounded-sm border border-stone-200 shadow-xs">
                         <div>
                             <span className="block text-xs font-bold text-stone-400 uppercase">Release Year</span>
                             <span className="font-semibold text-stone-800">{record.releaseYear || 'Unknown'}</span>
@@ -257,17 +241,17 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center">
-                            <span className="block text-[10px] font-bold text-amber-800 uppercase">Sleeve</span>
-                            <span className="text-lg font-bold text-[#78350f]">{record.conditionSleeve}</span>
+                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center dark:bg-amber-950/30 dark:border-amber-900/60">
+                            <span className="block text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase">Sleeve</span>
+                            <span className="text-lg font-bold text-accent">{record.conditionSleeve}</span>
                         </div>
-                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center">
-                            <span className="block text-[10px] font-bold text-amber-800 uppercase">Media</span>
-                            <span className="text-lg font-bold text-[#78350f]">{record.conditionMedia}</span>
+                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center dark:bg-amber-950/30 dark:border-amber-900/60">
+                            <span className="block text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase">Media</span>
+                            <span className="text-lg font-bold text-accent">{record.conditionMedia}</span>
                         </div>
-                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center">
-                            <span className="block text-[10px] font-bold text-amber-800 uppercase">Sound</span>
-                            <span className="text-lg font-bold text-[#78350f]">
+                        <div className="bg-amber-50 p-3 rounded-sm border border-amber-100 text-center dark:bg-amber-950/30 dark:border-amber-900/60">
+                            <span className="block text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase">Sound</span>
+                            <span className="text-lg font-bold text-accent">
                                 {record.soundQuality && record.soundQuality > 0 ? record.soundQuality : '-'}/5
                             </span>
                         </div>
@@ -278,7 +262,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                             <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <ListMusic className="w-4 h-4" /> Best Tracks
                             </h3>
-                            <div className="bg-white border border-stone-200 rounded-sm p-4">
+                            <div className="bg-paper border border-stone-200 rounded-sm p-4">
                                 <ul className="list-disc list-inside space-y-1 text-stone-700">
                                     {record.bestTracks.map((track, i) => (
                                         <li key={i}>{track}</li>
@@ -293,7 +277,7 @@ const VinylDetailModal: React.FC<VinylDetailModalProps> = ({ record: initialReco
                             <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <MessageSquare className="w-4 h-4" /> Others/Comments
                             </h3>
-                            <p className="bg-[#fffef0] p-4 rounded-sm border border-stone-200 text-stone-700 italic text-sm leading-relaxed font-serif">
+                            <p className="bg-[#fffef0] dark:bg-stone-50 p-4 rounded-sm border border-stone-200 text-stone-700 italic text-sm leading-relaxed font-serif">
                                 "{record.comments}"
                             </p>
                         </div>

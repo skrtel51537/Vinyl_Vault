@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../services/db';
-import { exportFullBackup, importFullBackup, normalizeRecord } from '../services/backupService';
+import { exportFullBackup, importFullBackup, normalizeRecord, normalizeWishlistItem } from '../services/backupService';
 import { confirmDialog, notify } from '../services/notify';
 import { getLastBackupDate } from '../services/backupReminder';
-import { makeRecord } from './fixtures';
+import { exportCollectionToExcel } from '../services/excelService';
+import { makeRecord, makeWishlistItem } from './fixtures';
 
 vi.mock('../services/notify', () => ({
   notify: vi.fn(),
@@ -18,6 +19,7 @@ const backupFile = (content: unknown) =>
 
 beforeEach(async () => {
   await db.vinyls.clear();
+  await db.wishlist.clear();
   vi.mocked(confirmDialog).mockResolvedValue(true);
 });
 afterEach(() => {
@@ -81,6 +83,32 @@ describe('normalizeRecord', () => {
     expect(bad).not.toHaveProperty('dominantColor');
     expect(normalizeRecord({ artist: 'A', coverUrl: 'http://insecure/a.jpg' })).not.toHaveProperty('coverUrl');
   });
+
+  it('keeps known moods only, and omits the field when there are none', () => {
+    expect(normalizeRecord({ artist: 'A', moods: ['night', 'Party', 'Sleepy'] })!.moods).toEqual(['Night', 'Party']);
+    expect(normalizeRecord({ artist: 'A', moods: ['Sleepy'] })).not.toHaveProperty('moods');
+    expect(normalizeRecord({ artist: 'A' })).not.toHaveProperty('moods');
+  });
+});
+
+describe('normalizeWishlistItem', () => {
+  it('keeps a valid item and drops its id', () => {
+    const { id: _id, ...rest } = makeWishlistItem({ id: 7 });
+    expect(normalizeWishlistItem(JSON.parse(JSON.stringify({ ...rest, id: 7 })))).toEqual(rest);
+  });
+
+  it('rejects non-objects and items without artist and album', () => {
+    expect(normalizeWishlistItem(null)).toBeNull();
+    expect(normalizeWishlistItem(['A'])).toBeNull();
+    expect(normalizeWishlistItem({ notes: 'x' })).toBeNull();
+  });
+
+  it('coerces wrong types and fills defaults', () => {
+    const w = normalizeWishlistItem({ album: 'X', releaseYear: 'abc', priority: 'urgent', maxPrice: '19,99', addedAt: 'nope' })!;
+    expect(w).toMatchObject({ artist: 'Unknown Artist', album: 'X', label: '', catNumber: '', releaseYear: null, priority: 'medium', maxPrice: 19.99, notes: '', discogsLink: '' });
+    expect(isNaN(w.addedAt.getTime())).toBe(false);
+    expect(normalizeWishlistItem({ artist: 'A', maxPrice: null })!.maxPrice).toBeNull();
+  });
 });
 
 describe('importFullBackup', () => {
@@ -92,6 +120,31 @@ describe('importFullBackup', () => {
 
     expect((await db.vinyls.toArray()).map(r => r.album)).toEqual(['New']);
     expect(confirmDialog).toHaveBeenCalledWith(expect.stringContaining('1 invalid entries will be skipped'), expect.anything());
+  });
+
+  it('replaces the wishlist too when the backup has one', async () => {
+    await db.wishlist.add(makeWishlistItem({ album: 'Old wish' }));
+    const backup = { version: '1.2.0', records: [makeRecord()], wishlist: [makeWishlistItem({ album: 'New wish' }), 'junk'] };
+
+    await expect(importFullBackup(backupFile(backup))).resolves.toBe(true);
+
+    expect((await db.wishlist.toArray()).map(w => w.album)).toEqual(['New wish']);
+    expect(confirmDialog).toHaveBeenCalledWith(expect.stringContaining('1 wishlist item'), expect.anything());
+    expect(confirmDialog).toHaveBeenCalledWith(expect.stringContaining('1 invalid entries will be skipped'), expect.anything());
+  });
+
+  it('keeps the current wishlist when restoring an older backup without one', async () => {
+    await db.wishlist.add(makeWishlistItem({ album: 'Keep this wish' }));
+
+    await expect(importFullBackup(backupFile({ version: '1.1.0', records: [makeRecord()] }))).resolves.toBe(true);
+
+    expect((await db.wishlist.toArray()).map(w => w.album)).toEqual(['Keep this wish']);
+    expect(confirmDialog).toHaveBeenCalledWith(expect.stringContaining('your current wishlist will be kept'), expect.anything());
+  });
+
+  it('restores a backup that only has a wishlist', async () => {
+    await expect(importFullBackup(backupFile({ version: '1.2.0', records: [], wishlist: [makeWishlistItem()] }))).resolves.toBe(true);
+    expect(await db.wishlist.count()).toBe(1);
   });
 
   it('leaves the collection untouched when the user cancels', async () => {
@@ -128,9 +181,11 @@ describe('importFullBackup', () => {
 });
 
 describe('exportFullBackup', () => {
-  it('downloads a JSON backup that restores to the same collection', async () => {
-    const original = [makeRecord({ album: 'A', coverUrl: 'data:image/png;base64,AA' }), makeRecord({ album: 'B', genre: ['Rock', 'Pop'] })];
+  it('downloads a JSON backup that restores to the same collection and wishlist', async () => {
+    const original = [makeRecord({ album: 'A', coverUrl: 'data:image/png;base64,AA', moods: ['Night'] }), makeRecord({ album: 'B', genre: ['Rock', 'Pop'] })];
+    const wishes = [makeWishlistItem(), makeWishlistItem({ album: 'Giant Steps', priority: 'low', maxPrice: null })];
     await db.vinyls.bulkAdd(original);
+    await db.wishlist.bulkAdd(wishes);
 
     let blob: Blob | undefined;
     URL.createObjectURL = vi.fn((b: Blob) => { blob = b; return 'blob:test'; });
@@ -144,10 +199,15 @@ describe('exportFullBackup', () => {
     const backup = JSON.parse(await blob!.text());
     expect(backup.recordCount).toBe(2);
 
+    expect(exportCollectionToExcel).toHaveBeenCalledWith(expect.any(Array), expect.arrayContaining([expect.objectContaining({ album: 'Giant Steps' })]));
+
     await db.vinyls.clear();
+    await db.wishlist.clear();
     await expect(importFullBackup(backupFile(backup))).resolves.toBe(true);
     const restored = (await db.vinyls.toArray()).map(({ id: _id, ...r }) => r);
     expect(restored).toEqual(original.map(({ id: _id, ...r }) => r));
+    const restoredWishes = (await db.wishlist.toArray()).map(({ id: _id, ...w }) => w);
+    expect(restoredWishes).toEqual(wishes.map(({ id: _id, ...w }) => w));
   });
 
   it('does nothing for an empty collection', async () => {

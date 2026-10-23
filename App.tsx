@@ -5,16 +5,23 @@ import ImportView from './components/ImportView';
 import CollectionView from './components/CollectionView';
 import AddVinylForm from './components/AddVinylForm';
 import HomeView from './components/HomeView';
+import WishlistView from './components/WishlistView';
+import ThemeToggle from './components/ThemeToggle';
 // Analytics pulls in recharts (~300 KB with its dependencies): load it on demand.
 const AnalyticsView = React.lazy(() => import('./components/AnalyticsView'));
 import ErrorBoundary, { isChunkLoadError } from './components/ErrorBoundary';
-import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2, AlertCircle } from 'lucide-react';
+import { Disc, PlusCircle, LayoutGrid, LogOut, Loader2, BarChart2, AlertCircle, Heart } from 'lucide-react';
+import { WishlistItem } from './types';
+import { wishlistToRecord } from './services/wishlist';
+import { notify } from './services/notify';
 
-type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics';
+type ViewState = 'loading' | 'home' | 'import' | 'collection' | 'add' | 'analytics' | 'wishlist';
 
 const App: React.FC = () => {
   const vinylCount = useLiveQuery(() => db.vinyls.count());
   const [currentView, setCurrentView] = useState<ViewState>('loading');
+  // Wishlist item being added to the collection ("Got it!"), if any.
+  const [acquiring, setAcquiring] = useState<WishlistItem | null>(null);
 
   // The collection only lives in this browser: protect it from storage eviction.
   useEffect(() => {
@@ -45,14 +52,14 @@ const App: React.FC = () => {
 
   if (currentView === 'loading') {
     return (
-      <div className="min-h-screen bg-[#d6d3d1] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#78350f] animate-spin" />
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-accent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#d6d3d1] text-stone-800 selection:bg-amber-200 selection:text-amber-900 font-sans">
+    <div className="min-h-screen bg-page text-stone-800 selection:bg-amber-200 selection:text-amber-900 font-sans">
 
       {/* Background Texture - Subtle Grain */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-40"
@@ -106,7 +113,17 @@ const App: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => setCurrentView('add')}
+                    onClick={() => setCurrentView('wishlist')}
+                    aria-label="Wishlist"
+                    aria-current={currentView === 'wishlist' ? 'page' : undefined}
+                    className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'wishlist' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="sr-only sm:not-sr-only">Wishlist</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setAcquiring(null); setCurrentView('add'); }}
                     aria-label="Add Record"
                     aria-current={currentView === 'add' ? 'page' : undefined}
                     className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-all flex items-center gap-2 border ${currentView === 'add' ? 'bg-[#78350f] border-[#92400e] text-white shadow-md' : 'border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50'}`}
@@ -116,6 +133,8 @@ const App: React.FC = () => {
                   </button>
 
                   <div className="h-6 w-px bg-amber-800 mx-1"></div>
+
+                  <ThemeToggle className="p-2 rounded-sm transition-all border border-transparent text-amber-200/70 hover:text-white hover:bg-[#78350f]/50" />
 
                   <button
                     onClick={handleExit}
@@ -137,7 +156,7 @@ const App: React.FC = () => {
               ) : currentView === 'analytics' ? (
                 <ErrorBoundary fallback={(error) => (
                   <div className="max-w-xl mx-auto mt-16 px-4">
-                    <div role="alert" className="bg-white border border-[#78350f] rounded-lg shadow-md p-8 text-center space-y-4">
+                    <div role="alert" className="bg-paper border border-[#78350f] rounded-lg shadow-md p-8 text-center space-y-4">
                       <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
                       <h2 className="text-2xl font-serif font-bold text-stone-800">Analytics couldn't load</h2>
                       <p className="text-stone-600 text-sm leading-relaxed">
@@ -164,14 +183,26 @@ const App: React.FC = () => {
                 )}>
                   <Suspense fallback={
                     <div className="flex items-center justify-center py-24">
-                      <Loader2 className="w-8 h-8 text-[#78350f] animate-spin" />
+                      <Loader2 className="w-8 h-8 text-accent animate-spin" />
                     </div>
                   }>
                     <AnalyticsView />
                   </Suspense>
                 </ErrorBoundary>
+              ) : currentView === 'wishlist' ? (
+                <WishlistView onAcquire={(item) => { setAcquiring(item); setCurrentView('add'); }} />
               ) : (
-                <AddVinylForm onCancel={() => setCurrentView('collection')} onSave={() => setCurrentView('collection')} />
+                <AddVinylForm
+                  key={acquiring?.id ?? 'new'}
+                  prefill={acquiring ? wishlistToRecord(acquiring) : undefined}
+                  wishlistItemId={acquiring?.id}
+                  onCancel={() => setCurrentView(acquiring ? 'wishlist' : 'collection')}
+                  onSave={() => {
+                    if (acquiring) notify(`"${acquiring.album}" moved from your wishlist to your collection.`, 'success');
+                    setAcquiring(null);
+                    setCurrentView('collection');
+                  }}
+                />
               )}
             </div>
           </>

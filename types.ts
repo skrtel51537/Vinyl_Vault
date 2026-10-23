@@ -18,6 +18,26 @@ export interface VinylRecord {
   toBeSold: boolean;
   coverUrl?: string; // Optional field for the fetched cover
   dominantColor?: string; // Extracted color from cover
+  moods?: Mood[]; // Set by hand; when absent, moods are guessed from genre/decade
+  addedAt: Date;
+}
+
+export type Mood = 'Relax' | 'Energy' | 'Night' | 'Party' | 'Melancholy';
+
+export type WishlistPriority = 'high' | 'medium' | 'low';
+
+/** A record the user wants to buy. Kept apart from the collection and its statistics. */
+export interface WishlistItem {
+  id?: number; // Auto-incremented by Dexie
+  artist: string;
+  album: string;
+  label: string;
+  catNumber: string;
+  releaseYear: number | null;
+  discogsLink: string;
+  notes: string;
+  priority: WishlistPriority;
+  maxPrice: number | null; // In the user's currency; null = no limit
   addedAt: Date;
 }
 

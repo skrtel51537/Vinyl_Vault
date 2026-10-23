@@ -4,7 +4,8 @@ import { db } from '../services/db';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { Disc, TrendingUp, Music, Clock, Activity, Trophy } from 'lucide-react';
 
-const COLORS = ['#78350f', '#854d0e', '#a16207', '#ca8a04', '#d97706', '#ea580c', '#c2410c'];
+// The two darkest browns come from theme variables so they stay readable in the dark theme.
+const COLORS = ['var(--color-accent)', 'var(--color-chart-2)', '#a16207', '#ca8a04', '#d97706', '#ea580c', '#c2410c'];
 
 const AnalyticsView: React.FC = () => {
     const allVinyls = useLiveQuery(() => db.vinyls.toArray());
@@ -69,8 +70,8 @@ const AnalyticsView: React.FC = () => {
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-3 border border-[#78350f] rounded-sm shadow-xl">
-                    <p className="font-bold text-[#78350f]">{label}</p>
+                <div className="bg-paper p-3 border border-[#78350f] rounded-sm shadow-xl">
+                    <p className="font-bold text-accent">{label}</p>
                     <p className="text-sm text-stone-600">{payload[0].value} Records</p>
                 </div>
             );
@@ -82,7 +83,7 @@ const AnalyticsView: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-amber-100 rounded-full border border-amber-200 flex items-center justify-center text-[#78350f]">
+                <div className="w-12 h-12 bg-amber-100 rounded-full border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900 flex items-center justify-center text-accent">
                     <TrendingUp className="w-6 h-6" />
                 </div>
                 <div>
@@ -93,7 +94,7 @@ const AnalyticsView: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* 1. Time Machine */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
+                <div className="bg-paper p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-amber-600" />
@@ -103,13 +104,13 @@ const AnalyticsView: React.FC = () => {
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={stats.decadesData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e7e5e4" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#78716c', fontSize: 12 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#78716c', fontSize: 12 }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f5f5f4' }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-stone-200)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-stone-500)', fontSize: 12 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-stone-500)', fontSize: 12 }} />
+                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-stone-100)' }} />
                                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                                     {stats.decadesData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#78350f' : '#92400e'} />
+                                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'var(--color-accent)' : 'var(--color-accent-soft)'} />
                                     ))}
                                 </Bar>
                             </BarChart>
@@ -118,7 +119,7 @@ const AnalyticsView: React.FC = () => {
                 </div>
 
                 {/* 2. Musical DNA (Genres) */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
+                <div className="bg-paper p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Music className="w-5 h-5 text-amber-600" />
@@ -142,15 +143,15 @@ const AnalyticsView: React.FC = () => {
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: '#fff', borderColor: '#e7e5e4', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: '#78350f', fontWeight: 600 }} />
-                                <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#57534e' }} />
+                                <Tooltip contentStyle={{ backgroundColor: 'var(--color-paper)', borderColor: 'var(--color-stone-200)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: 'var(--color-accent)', fontWeight: 600 }} />
+                                <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'var(--color-stone-600)' }} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
                 {/* 3. Collection Health */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
+                <div className="bg-paper p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Activity className="w-5 h-5 text-amber-600" />
@@ -161,7 +162,7 @@ const AnalyticsView: React.FC = () => {
                         <div>
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="font-semibold text-stone-700">Immaculate (Mint / NM)</span>
-                                <span className="font-bold text-[#78350f]">{stats.health.mintOrNear}</span>
+                                <span className="font-bold text-accent">{stats.health.mintOrNear}</span>
                             </div>
                             <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
                                 <div
@@ -173,7 +174,7 @@ const AnalyticsView: React.FC = () => {
                         <div>
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="font-semibold text-stone-700">Solid Spinners (VG+ / VG)</span>
-                                <span className="font-bold text-[#78350f]">{stats.health.goodPlus}</span>
+                                <span className="font-bold text-accent">{stats.health.goodPlus}</span>
                             </div>
                             <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
                                 <div
@@ -189,7 +190,7 @@ const AnalyticsView: React.FC = () => {
                 </div>
 
                 {/* 4. Top Artists */}
-                <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
+                <div className="bg-paper p-6 rounded-lg border border-stone-200 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-stone-800 flex items-center gap-2">
                             <Trophy className="w-5 h-5 text-amber-600" />
@@ -199,7 +200,7 @@ const AnalyticsView: React.FC = () => {
                     <div className="space-y-4">
                         {stats.topArtists.map((artist, index) => (
                             <div key={artist.name} className="flex items-center gap-4 group">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${index === 0 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-stone-100 text-stone-600'
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${index === 0 ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : 'bg-stone-100 text-stone-600'
                                     }`}>
                                     {index + 1}
                                 </div>
@@ -210,7 +211,7 @@ const AnalyticsView: React.FC = () => {
                                     </div>
                                     <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-[#78350f] rounded-full opacity-60 group-hover:opacity-100 transition-all duration-500"
+                                            className="h-full bg-accent rounded-full opacity-60 group-hover:opacity-100 transition-all duration-500"
                                             style={{ width: `${(artist.count / stats.topArtists[0].count) * 100}%` }}
                                         ></div>
                                     </div>
