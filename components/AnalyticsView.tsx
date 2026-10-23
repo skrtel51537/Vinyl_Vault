@@ -4,7 +4,8 @@ import { db } from '../services/db';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { Disc, TrendingUp, Music, Clock, Activity, Trophy } from 'lucide-react';
 
-const COLORS = ['#78350f', '#854d0e', '#a16207', '#ca8a04', '#d97706', '#ea580c', '#c2410c'];
+// The two darkest browns come from theme variables so they stay readable in the dark theme.
+const COLORS = ['var(--color-accent)', 'var(--color-chart-2)', '#a16207', '#ca8a04', '#d97706', '#ea580c', '#c2410c'];
 
 const AnalyticsView: React.FC = () => {
     const allVinyls = useLiveQuery(() => db.vinyls.toArray());

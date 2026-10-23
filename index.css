@@ -95,6 +95,7 @@
   --color-accent: #78350f;        /* wood-brown text and icons */
   --color-accent-soft: #92400e;
   --color-accent-strong: #451a03;
+  --color-chart-2: #854d0e;       /* second slice of the genre chart */
 }
 
 /* "Listening room": the dark variant of the wood & cream theme. The neutral stone
@@ -110,6 +111,7 @@
   --color-accent: #e0a45a;
   --color-accent-soft: #c4853f;
   --color-accent-strong: #f2cd92;
+  --color-chart-2: #b9773a;
 
   --color-stone-50: #2a201a;
   --color-stone-100: #31261f;
