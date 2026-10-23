@@ -106,6 +106,8 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
       discogsLink: formData.discogsLink || '',
       toBeSold: formData.toBeSold || false,
       coverUrl: formData.coverUrl,
+      // A new cover needs a new accent color (recomputed by the card).
+      ...(initialValues && formData.coverUrl !== initialValues.coverUrl ? { dominantColor: undefined } : {}),
     } as VinylRecord;
 
     try {

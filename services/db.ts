@@ -10,6 +10,13 @@ class VinylDatabase extends Dexie {
     (this as any).version(1).stores({
       vinyls: '++id, artist, album, *genre, releaseYear, rating, toBeSold, addedAt'
     });
+    // v2 (app 1.4.0): the dominant color is now picked from the most vivid hue
+    // instead of the average. Drop the stored colors once so cards recompute them.
+    this.version(2).stores({
+      vinyls: '++id, artist, album, *genre, releaseYear, rating, toBeSold, addedAt'
+    }).upgrade(tx => tx.table('vinyls').toCollection().modify((record: VinylRecord) => {
+      delete record.dominantColor;
+    }));
   }
 }
 
