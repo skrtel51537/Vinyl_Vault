@@ -3,7 +3,7 @@ import { VinylRecord, WishlistItem } from '../types';
 import { exportCollectionToExcel } from './excelService';
 import { confirmDialog, notify } from './notify';
 import { recordBackupDone } from './backupReminder';
-import { normalizeMoods } from './moods';
+import { downloadFile } from './download';
 import { normalizePriority, parsePrice } from './wishlist';
 
 /**
@@ -37,22 +37,13 @@ export const exportFullBackup = async (): Promise<void> => {
     version: '1.2.0',
     exportDate: new Date().toISOString(),
     recordCount: records.length,
-    records: records,
+    // Moods were removed in 1.6.0; records saved before then may still carry them.
+    records: records.map(({ moods: _moods, ...record }: VinylRecord & { moods?: unknown }) => record),
     wishlist: wishlist,
   };
 
-  const jsonString = JSON.stringify(backup, null, 2);
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
   const dateStr = new Date().toISOString().split('T')[0];
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `vinyl-vault-backup-${dateStr}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadFile(JSON.stringify(backup, null, 2), 'application/json', `vinyl-vault-backup-${dateStr}.json`);
   recordBackupDone();
 
   notify(`Backup complete: ${records.length} records` +
@@ -100,7 +91,6 @@ export const normalizeRecord = (raw: unknown): VinylRecord | null => {
 
   const coverUrl = toStr(r.coverUrl);
   const dominantColor = toStr(r.dominantColor);
-  const moods = normalizeMoods(r.moods);
 
   return {
     artist: artist || 'Unknown Artist',
@@ -122,7 +112,6 @@ export const normalizeRecord = (raw: unknown): VinylRecord | null => {
     // Only keep covers the app can actually display (embedded images or HTTPS URLs).
     ...(/^(data:image\/|https:\/\/)/.test(coverUrl) ? { coverUrl } : {}),
     ...(/^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/.test(dominantColor) ? { dominantColor } : {}),
-    ...(moods.length > 0 ? { moods } : {}),
     addedAt: toDate(r.addedAt),
   };
 };

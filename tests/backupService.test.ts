@@ -84,10 +84,10 @@ describe('normalizeRecord', () => {
     expect(normalizeRecord({ artist: 'A', coverUrl: 'http://insecure/a.jpg' })).not.toHaveProperty('coverUrl');
   });
 
-  it('keeps known moods only, and omits the field when there are none', () => {
-    expect(normalizeRecord({ artist: 'A', moods: ['night', 'Party', 'Sleepy'] })!.moods).toEqual(['Night', 'Party']);
-    expect(normalizeRecord({ artist: 'A', moods: ['Sleepy'] })).not.toHaveProperty('moods');
-    expect(normalizeRecord({ artist: 'A' })).not.toHaveProperty('moods');
+  it('still reads 1.5.0 backups with moods, and drops them', () => {
+    const r = normalizeRecord({ artist: 'A', album: 'B', moods: ['Night', 'Party'] })!;
+    expect(r).toMatchObject({ artist: 'A', album: 'B' });
+    expect(r).not.toHaveProperty('moods');
   });
 });
 
@@ -182,9 +182,10 @@ describe('importFullBackup', () => {
 
 describe('exportFullBackup', () => {
   it('downloads a JSON backup that restores to the same collection and wishlist', async () => {
-    const original = [makeRecord({ album: 'A', coverUrl: 'data:image/png;base64,AA', moods: ['Night'] }), makeRecord({ album: 'B', genre: ['Rock', 'Pop'] })];
+    const original = [makeRecord({ album: 'A', coverUrl: 'data:image/png;base64,AA' }), makeRecord({ album: 'B', genre: ['Rock', 'Pop'] })];
     const wishes = [makeWishlistItem(), makeWishlistItem({ album: 'Giant Steps', priority: 'low', maxPrice: null })];
-    await db.vinyls.bulkAdd(original);
+    // A record saved by 1.5.0 may still carry moods: they are left out of the backup.
+    await db.vinyls.bulkAdd([Object.assign({ ...original[0] }, { moods: ['Night'] }), original[1]]);
     await db.wishlist.bulkAdd(wishes);
 
     let blob: Blob | undefined;
@@ -198,6 +199,7 @@ describe('exportFullBackup', () => {
     expect(getLastBackupDate()).not.toBeNull();
     const backup = JSON.parse(await blob!.text());
     expect(backup.recordCount).toBe(2);
+    expect(backup.records[0]).not.toHaveProperty('moods');
 
     expect(exportCollectionToExcel).toHaveBeenCalledWith(expect.any(Array), expect.arrayContaining([expect.objectContaining({ album: 'Giant Steps' })]));
 

@@ -1,14 +1,9 @@
 # Vinyl Vault
 
 A personal vinyl collection manager that runs entirely in your browser. Import your
-collection from Excel, browse it as a grid or a table, search and filter it, see
-statistics, and fetch album covers automatically.
+collection from Excel or from the CSV files Discogs exports, browse it as a grid or a
+table, search and filter it, see statistics, and fetch album covers automatically.
 
-- **What should I play tonight?** (sparkles button in the collection): pick a mood
-  (Relax, Energy, Night, Party, Melancholy or "Surprise me"), optionally a decade and
-  "favorites only", and get one record. Higher-rated records come up more often and
-  recent suggestions are not repeated. Moods can be set by hand in each record; when
-  a record has none, they are guessed from its genre and decade.
 - **Wishlist**: the records you are hunting for, with priority and maximum price.
   It is kept apart from the collection and its statistics. "Got it!" moves an item
   into the collection with its details pre-filled.
@@ -53,8 +48,29 @@ Use a backup to move it between them.
 Go to **Import** and drop an `.xlsx` file. The first sheet is read, with these
 columns: Artist, Album, Genre, Collection, Release Year, Country, Label, Cat. Number,
 Condition Sleeve, Condition Media, Sound Quality, Rating, Best tracks,
-Others/Comments, Discogs link, To be sold, and optionally Moods.
-List columns (Genre, Label, Cat. Number, Best tracks, Moods) use `;` as separator.
+Others/Comments, Discogs link, To be sold. List columns (Genre, Label, Cat. Number,
+Best tracks) use `;` as separator. The "Moods" column of files made with 1.5.0 is
+ignored. Records already in the collection (same artist and album) are skipped.
+
+## Importing from Discogs
+
+On Discogs, export your collection and/or your wantlist (CSV). Then, on the
+**Import** page, use **Discogs collection** or **Discogs wantlist**: each one only
+accepts its own export. Use the `.csv` file as downloaded, without opening and saving
+it in Excel first. The app reads the file only; it never connects to Discogs.
+
+A preview shows what will be added before anything is saved. Records already saved
+(same Discogs release, or same artist and album when there is no link) are left
+untouched, and formats that are not vinyl (CD, cassette, file…) are skipped.
+Wantlist items go to the wishlist, except those you already have.
+
+What changes on the way in:
+- Discogs does not export genres or countries: add them from each record's page.
+- The " (2)", " (3)"… Discogs adds to some artist and label names is removed.
+- Labels and catalog numbers are kept as two lists (Discogs does not keep them paired).
+- Star ratings (1–5) become ratings out of 10; condition grades become M, NM, VG+…
+- The Discogs folder becomes the record's collection; notes and custom fields go to
+  the comments.
 
 ## Backup and restore
 
@@ -64,8 +80,13 @@ the collection. Make backups regularly:
 - **Full Backup** (Import page) downloads two files:
   - a `.json` file with everything, including cover images and the wishlist: this is
     the one to restore from;
-  - an `.xlsx` file with the metadata only, handy to read or edit in Excel (the
-    wishlist is on a separate "Wishlist" sheet).
+  - an `.xlsx` file with the metadata only, handy to read or edit in Excel, with a
+    "Summary" sheet (totals, records per genre and decade) and the wishlist on a
+    separate "Wishlist" sheet. It can be imported again.
+- **Export Discogs CSV** (Import page) downloads the collection with the columns of
+  the Discogs collection export. It only has what Discogs has a column for (no genre,
+  country, sound quality, best tracks, "for sale", covers or wishlist), so it is not
+  a backup.
 - **Restore Backup** loads a `.json` backup and **replaces** the current collection
   (and the wishlist, if the backup has one: backups made before 1.5.0 don't, so the
   current wishlist is kept). The replacement is all-or-nothing: if anything fails,
