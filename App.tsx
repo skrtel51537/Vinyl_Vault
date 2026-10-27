@@ -78,6 +78,7 @@ const App: React.FC = () => {
         ) : currentView === 'import' ? (
           <ImportView
             onImportComplete={() => setCurrentView('collection')}
+            onWishlistImportComplete={() => setCurrentView('wishlist')}
             onBack={() => setCurrentView('home')}
           />
         ) : (

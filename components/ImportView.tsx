@@ -1,23 +1,35 @@
 import React, { useCallback, useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, Loader2, AlertCircle, Trash2, ArrowLeft, Download, UploadCloud } from 'lucide-react';
+import { Upload, FileSpreadsheet, Loader2, AlertCircle, Trash2, ArrowLeft, Download, UploadCloud, Disc, Heart } from 'lucide-react';
 import { parseExcelFile } from '../services/excelService';
 import { db, resetDatabase } from '../services/db';
 import { VinylRecord } from '../types';
 import { exportFullBackup, importFullBackup } from '../services/backupService';
 import { confirmDialog, notify } from '../services/notify';
 import { describeBackupAge, getLastBackupDate, isBackupOverdue } from '../services/backupReminder';
+import { DiscogsFileError, DiscogsKind, parseDiscogsCollection, parseDiscogsWantlist, splitNewAndExisting } from '../services/discogsCsv';
+import DiscogsImportPreview, { DiscogsImportSummary } from './DiscogsImportPreview';
 
 interface ImportViewProps {
   onImportComplete: () => void;
+  onWishlistImportComplete?: () => void;
   onBack?: () => void;
 }
 
-const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => {
+/** A Discogs import waiting for the user's OK in the preview. */
+interface PendingDiscogsImport {
+  summary: DiscogsImportSummary;
+  save: () => Promise<void>;
+}
+
+const fileButtonClass = 'flex items-center gap-2 px-5 py-2.5 bg-paper hover:bg-stone-50 text-amber-800 dark:text-amber-300 font-bold rounded-lg shadow-md border border-amber-300 dark:border-amber-800 transition-all cursor-pointer';
+
+const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onWishlistImportComplete, onBack }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
   const [lastBackup, setLastBackup] = useState<Date | null>(getLastBackupDate);
+  const [pendingDiscogs, setPendingDiscogs] = useState<PendingDiscogsImport | null>(null);
 
   // ... (existing processFile, onDrop, onDragOver, onDragLeave, handleFileInput, handleReset logic remains unchanged) ...
 
@@ -123,6 +135,62 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
     }
   };
 
+  const handleDiscogsFile = (kind: DiscogsKind) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = ''; // The same file can be chosen again
+    if (!file) return;
+
+    setIsProcessing(true);
+    setError(null);
+    try {
+      // file.text() decodes UTF-8, as Discogs writes it (read as plain bytes, accents get garbled).
+      const text = await file.text();
+      if (kind === 'collection') {
+        const parsed = await parseDiscogsCollection(text);
+        const { fresh, existing } = splitNewAndExisting(parsed.items, await db.vinyls.toArray());
+        setPendingDiscogs({
+          summary: { kind, fresh, existing: existing.length, skippedNotVinyl: parsed.skippedNotVinyl, invalid: parsed.invalid },
+          save: () => db.transaction('rw', db.vinyls, async () => { await db.vinyls.bulkAdd(fresh); }),
+        });
+      } else {
+        const parsed = await parseDiscogsWantlist(text);
+        // Records already owned are not wanted again.
+        const saved = [...await db.wishlist.toArray(), ...await db.vinyls.toArray()];
+        const { fresh, existing } = splitNewAndExisting(parsed.items, saved);
+        setPendingDiscogs({
+          summary: { kind, fresh, existing: existing.length, skippedNotVinyl: parsed.skippedNotVinyl, invalid: parsed.invalid },
+          save: () => db.transaction('rw', db.wishlist, async () => { await db.wishlist.bulkAdd(fresh); }),
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof DiscogsFileError ? err.message : 'Failed to read the Discogs file. Choose the .csv file exported by Discogs.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const confirmDiscogsImport = async () => {
+    if (!pendingDiscogs) return;
+    const { summary, save } = pendingDiscogs;
+    setIsProcessing(true);
+    try {
+      await save();
+      const count = summary.fresh.length;
+      notify(`Imported ${count} record${count === 1 ? '' : 's'} from Discogs into your ${summary.kind === 'collection' ? 'collection' : 'wishlist'}.`, 'success');
+      setPendingDiscogs(null);
+      if (summary.kind === 'collection') onImportComplete();
+      else onWishlistImportComplete?.();
+    } catch (err) {
+      console.error(err);
+      setPendingDiscogs(null);
+      setError('Failed to save the imported records. Nothing was changed.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleRestoreBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -147,7 +215,8 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-[calc(100vh-100px)] p-6 relative">
+    // min-h (not h): with the Discogs section the card can be taller than the window, and must then scroll.
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-6 pt-20 relative">
 
       {/* Back Button */}
       {onBack && (
@@ -227,6 +296,34 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         {/* Separator */}
         <div className="flex items-center gap-4">
           <div className="flex-1 h-px bg-stone-300"></div>
+          <span className="text-stone-400 text-sm font-medium">From Discogs</span>
+          <div className="flex-1 h-px bg-stone-300"></div>
+        </div>
+
+        {/* Discogs CSV import: collection and wantlist are separate exports */}
+        <div className="p-6 rounded-xl border border-stone-200 bg-stone-50">
+          <p className="text-sm text-stone-600 mb-4">
+            Import the CSV files you export from Discogs. Records you already have are left untouched,
+            and you see what will be added before anything is saved.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <label className={fileButtonClass}>
+              <Disc className="w-5 h-5" />
+              Discogs collection
+              <input type="file" className="hidden" accept=".csv,text/csv" onChange={handleDiscogsFile('collection')} disabled={isProcessing} />
+            </label>
+            <label className={fileButtonClass}>
+              <Heart className="w-5 h-5" />
+              Discogs wantlist
+              <input type="file" className="hidden" accept=".csv,text/csv" onChange={handleDiscogsFile('wantlist')} disabled={isProcessing} />
+            </label>
+          </div>
+          <p className="text-xs text-stone-500 mt-3">Use the .csv file as downloaded: opening and saving it in Excel first can damage it.</p>
+        </div>
+
+        {/* Separator */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-stone-300"></div>
           <span className="text-stone-400 text-sm font-medium">Complete Database Backup</span>
           <div className="flex-1 h-px bg-stone-300"></div>
         </div>
@@ -268,6 +365,15 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
           </p>
         </div>
       </div>
+
+      {pendingDiscogs && (
+        <DiscogsImportPreview
+          summary={pendingDiscogs.summary}
+          busy={isProcessing}
+          onConfirm={confirmDiscogsImport}
+          onCancel={() => setPendingDiscogs(null)}
+        />
+      )}
     </div>
   );
 };
