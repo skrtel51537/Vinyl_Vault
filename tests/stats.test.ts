@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { topGenres } from '../services/stats';
+import { averageRating, decadeCounts, topGenres } from '../services/stats';
 import { makeRecord } from './fixtures';
 
 describe('topGenres', () => {
@@ -19,6 +19,16 @@ describe('topGenres', () => {
 
   it('keeps genres that only contain the word rock', () => {
     expect(topGenres([makeRecord({ genre: ['Psychedelic Rock', 'Rock'] })])).toEqual([{ name: 'Psychedelic Rock', value: 1 }]);
+  });
+
+  it('counts records per decade, oldest first, skipping unknown years', () => {
+    const records = [1994, 1971, 1975, null, 1969].map(releaseYear => makeRecord({ releaseYear }));
+    expect(decadeCounts(records)).toEqual([{ name: '1960s', count: 1 }, { name: '1970s', count: 2 }, { name: '1990s', count: 1 }]);
+  });
+
+  it('averages the rated records only', () => {
+    expect(averageRating([8, 0, 7].map(rating => makeRecord({ rating })))).toBe(7.5);
+    expect(averageRating([makeRecord({ rating: 0 })])).toBeNull();
   });
 
   it('returns at most the requested number of genres', () => {

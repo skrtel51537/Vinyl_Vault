@@ -1,4 +1,6 @@
+import type { WorkSheet } from 'xlsx';
 import { VinylRecord, WishlistItem } from '../types';
+import { averageRating, decadeCounts, genreCounts } from './stats';
 import { PRIORITY_LABELS, sortWishlist } from './wishlist';
 
 // xlsx is ~420 KB minified and only needed for Excel import/export, so it is loaded
@@ -82,6 +84,31 @@ export const parseExcelFile = async (file: File): Promise<VinylRecord[]> => {
   });
 };
 
+/** Column widths that fit the content (in characters), capped so long comments stay readable. */
+const fitColumns = (rows: Record<string, unknown>[]): { wch: number }[] =>
+  Object.keys(rows[0] ?? {}).map(header => ({
+    wch: Math.min(50, Math.max(header.length, ...rows.map(r => String(r[header] ?? '').length)) + 2),
+  }));
+
+/** Readable widths plus a filter on the header row. */
+const tidySheet = (sheet: WorkSheet, rows: Record<string, unknown>[]): void => {
+  sheet['!cols'] = fitColumns(rows);
+  if (sheet['!ref']) sheet['!autofilter'] = { ref: sheet['!ref'] };
+};
+
+/** The "Summary" sheet: totals, then records per genre and per decade. */
+const summaryRows = (records: VinylRecord[]): (string | number)[][] => [
+  ['Records', records.length],
+  ['For sale', records.filter(r => r.toBeSold).length],
+  ['Average rating (/10)', averageRating(records) ?? '-'],
+  [],
+  ['Genre (without Rock)', 'Records'],
+  ...genreCounts(records).map(g => [g.name, g.value]),
+  [],
+  ['Decade', 'Records'],
+  ...decadeCounts(records).map(d => [d.name, d.count]),
+];
+
 export const exportCollectionToExcel = async (records: VinylRecord[], wishlist: WishlistItem[] = []): Promise<void> => {
   const XLSX = await loadXlsx();
   // Map internal data back to the User's Excel columns
@@ -105,8 +132,14 @@ export const exportCollectionToExcel = async (records: VinylRecord[], wishlist: 
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(excelRows);
+  tidySheet(worksheet, excelRows);
   const workbook = XLSX.utils.book_new();
+  // Collection must stay the first sheet: import only reads that one.
   XLSX.utils.book_append_sheet(workbook, worksheet, "Collection");
+
+  const summary = XLSX.utils.aoa_to_sheet(summaryRows(records));
+  summary['!cols'] = [{ wch: 28 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(workbook, summary, "Summary");
 
   // The wishlist goes on its own sheet. Import only reads the first sheet, so it
   // never ends up in the collection.
@@ -123,7 +156,9 @@ export const exportCollectionToExcel = async (records: VinylRecord[], wishlist: 
       'Discogs link': w.discogsLink,
       'Added': new Date(w.addedAt).toISOString().split('T')[0],
     }));
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(wishlistRows), "Wishlist");
+    const wishlistSheet = XLSX.utils.json_to_sheet(wishlistRows);
+    tidySheet(wishlistSheet, wishlistRows);
+    XLSX.utils.book_append_sheet(workbook, wishlistSheet, "Wishlist");
   }
 
   // Generate file name with date

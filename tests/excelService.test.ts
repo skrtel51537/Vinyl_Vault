@@ -75,8 +75,28 @@ describe('exportCollectionToExcel', () => {
     // The Excel file holds metadata only: no id, cover, color or date added.
     const metadata = ({ id: _id, addedAt: _addedAt, coverUrl: _cover, dominantColor: _color, ...rest }: VinylRecord) => rest;
     expect(parsed.map(metadata)).toEqual(original.map(metadata));
-    expect(workbook.SheetNames).toEqual(['Collection']);
+    expect(workbook.SheetNames).toEqual(['Collection', 'Summary']);
     expect(Object.keys(XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets['Collection'])[0])).not.toContain('Moods');
+  });
+
+  it('adds column widths, a filter and a summary sheet', async () => {
+    await exportCollectionToExcel([
+      makeRecord({ genre: ['Rock', 'Stoner'], releaseYear: 1994, rating: 8, toBeSold: true }),
+      makeRecord({ genre: ['Stoner', 'Blues'], releaseYear: 1971, rating: 0 }),
+      makeRecord({ genre: ['Stoner'], releaseYear: 1975, rating: 6 }),
+    ]);
+
+    const [workbook] = vi.mocked(XLSX.writeFile).mock.calls[0];
+    const collection = workbook.Sheets['Collection'];
+    expect(collection['!autofilter']).toEqual({ ref: collection['!ref'] });
+    expect(collection['!cols']?.[0]).toEqual({ wch: 'Miles Davis'.length + 2 });
+
+    const summary = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets['Summary'], { header: 1, blankrows: false });
+    expect(summary).toEqual([
+      ['Records', 3], ['For sale', 1], ['Average rating (/10)', 7],
+      ['Genre (without Rock)', 'Records'], ['Stoner', 3], ['Blues', 1],
+      ['Decade', 'Records'], ['1970s', 2], ['1990s', 1],
+    ]);
   });
 
   it('adds the wishlist on its own sheet, which import ignores', async () => {
@@ -87,7 +107,7 @@ describe('exportCollectionToExcel', () => {
     await exportCollectionToExcel([makeRecord()], wishes);
 
     const [workbook] = vi.mocked(XLSX.writeFile).mock.calls[0];
-    expect(workbook.SheetNames).toEqual(['Collection', 'Wishlist']);
+    expect(workbook.SheetNames).toEqual(['Collection', 'Summary', 'Wishlist']);
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets['Wishlist']);
     expect(rows.map(r => r['Album'])).toEqual(['Top one', 'Low one']);
     expect(rows[0]).toMatchObject({ 'Artist': 'John Coltrane', 'Priority': 'High', 'Max price': 19.99, 'Added': '2025-02-01' });
