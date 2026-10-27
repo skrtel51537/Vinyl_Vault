@@ -5,6 +5,14 @@ import { notify } from '../services/notify';
 import { resizeImageFile, UPLOADED_COVER_SIZE } from '../services/image';
 import { Save, X, PlusCircle, Edit, Upload, Image } from 'lucide-react';
 
+const GRADES = ['M', 'NM', 'VG+', 'VG', 'G+', 'G', 'F', 'P'];
+// Sleeve values Discogs also uses.
+const SLEEVE_ONLY_GRADES = ['Generic', 'No Cover', 'Not Graded'];
+
+// "-" (not graded yet) first; a value from an older import that is not in the list is kept selectable.
+const conditionOptions = (grades: string[], current?: string): string[] =>
+  ['', ...grades, ...(current && !grades.includes(current) ? [current] : [])];
+
 interface AddVinylFormProps {
   onCancel: () => void;
   onSave: () => void;
@@ -232,13 +240,13 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
             <div>
               <label className={labelClass}>Sleeve</label>
               <select name="conditionSleeve" value={formData.conditionSleeve} onChange={handleChange} className={inputClass}>
-                {['M', 'NM', 'VG+', 'VG', 'G+', 'G', 'F', 'P'].map(c => <option key={c} value={c}>{c}</option>)}
+                {conditionOptions([...GRADES, ...SLEEVE_ONLY_GRADES], formData.conditionSleeve).map(c => <option key={c} value={c}>{c || '-'}</option>)}
               </select>
             </div>
             <div>
               <label className={labelClass}>Media</label>
               <select name="conditionMedia" value={formData.conditionMedia} onChange={handleChange} className={inputClass}>
-                {['M', 'NM', 'VG+', 'VG', 'G+', 'G', 'F', 'P'].map(c => <option key={c} value={c}>{c}</option>)}
+                {conditionOptions(GRADES, formData.conditionMedia).map(c => <option key={c} value={c}>{c || '-'}</option>)}
               </select>
             </div>
             <div>
