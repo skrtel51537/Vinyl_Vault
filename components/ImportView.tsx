@@ -166,7 +166,8 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onWishlistImp
         });
       }
     } catch (err) {
-      console.error(err);
+      // A wrong file is the user's to fix, not an app error.
+      if (!(err instanceof DiscogsFileError)) console.error(err);
       setError(err instanceof DiscogsFileError ? err.message : 'Failed to read the Discogs file. Choose the .csv file exported by Discogs.');
     } finally {
       setIsProcessing(false);

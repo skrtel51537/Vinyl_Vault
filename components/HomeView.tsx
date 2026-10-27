@@ -89,7 +89,7 @@ const HomeView: React.FC<HomeViewProps> = ({ vinylCount, onEnter, onImport }) =>
                     <div className="relative z-10">
                         <h2 className="text-2xl font-bold text-amber-800 dark:text-amber-400 mb-2 font-serif">Import Crate</h2>
                         <p className="text-stone-600 mb-6">
-                            Add new records via Excel import or manage your database.
+                            Add new records from Excel or Discogs, or manage your database.
                         </p>
 
                         <div className="inline-flex items-center gap-2 text-amber-600 group-hover:text-amber-800 dark:group-hover:text-amber-400 font-bold uppercase tracking-widest text-sm">
