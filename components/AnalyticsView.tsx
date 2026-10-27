@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../services/db';
+import { topGenres } from '../services/stats';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { Disc, TrendingUp, Music, Clock, Activity, Trophy } from 'lucide-react';
 
@@ -26,17 +27,8 @@ const AnalyticsView: React.FC = () => {
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => a.name.localeCompare(b.name));
 
-        // 2. Genres (Musical DNA)
-        const genreMap = new Map<string, number>();
-        allVinyls.forEach(v => {
-            v.genre.forEach(g => {
-                genreMap.set(g, (genreMap.get(g) || 0) + 1);
-            });
-        });
-        const genreData = Array.from(genreMap.entries())
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 6); // Top 6
+        // 2. Genres (Musical DNA): top 6, without "Rock"
+        const genreData = topGenres(allVinyls);
 
         // 3. Collection Health
         let mintOrNear = 0;
