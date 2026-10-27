@@ -1,4 +1,5 @@
 import { VinylRecord, WishlistItem } from '../types';
+import { downloadFile } from './download';
 
 // Like excelService: SheetJS is loaded on demand, only when a file is imported.
 const loadXlsx = () => import('xlsx');
@@ -26,12 +27,22 @@ export const DISCOGS_CONDITIONS: [code: string, discogs: string][] = [
   ['P', 'Poor (P)'],
 ];
 const CODE_BY_DISCOGS = new Map(DISCOGS_CONDITIONS.map(([code, discogs]) => [discogs.toLowerCase(), code]));
+const DISCOGS_BY_CODE = new Map(DISCOGS_CONDITIONS);
 
 /** "Very Good Plus (VG+)" → "VG+". Other values (Generic, No Cover, Not Graded…) are kept as they are. */
 export const conditionFromDiscogs = (value: string): string => {
   const text = value.trim();
   return CODE_BY_DISCOGS.get(text.toLowerCase()) ?? text;
 };
+
+/** "VG+" → "Very Good Plus (VG+)". Other values are kept as they are. */
+export const conditionToDiscogs = (code: string): string => DISCOGS_BY_CODE.get(code) ?? code;
+
+// A cell starting with one of these may run as a formula when the CSV is opened in a
+// spreadsheet. Exports prefix such values with an apostrophe, which the import removes again.
+const FORMULA_START = /^[=+\-@\t\r]/;
+const neutralizeFormula = (value: string): string => FORMULA_START.test(value) ? `'${value}` : value;
+const restoreFormula = (value: string): string => /^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value;
 
 /** Discogs adds " (2)", " (3)"… to tell apart artists or labels with the same name. */
 export const stripDiscogsSuffix = (name: string): string => name.replace(/ \(\d+\)/g, '').trim();
@@ -82,9 +93,13 @@ export const discogsReleaseId = (link: string): string | null =>
 type Row = Record<string, unknown>;
 type Getter = (column: string) => string;
 
+/** Columns of the Discogs collection export, in its order. */
+export const DISCOGS_COLLECTION_COLUMNS = ['Catalog#', 'Artist', 'Title', 'Label', 'Format', 'Rating', 'Released',
+  'release_id', 'CollectionFolder', 'Date Added', 'Collection Media Condition', 'Collection Sleeve Condition', 'Collection Notes'];
+
 const REQUIRED_COLUMNS = ['Catalog#', 'Artist', 'Title', 'Label', 'Format', 'release_id'];
 // Collection columns Discogs always exports. Any other "Collection …" column is a custom field.
-const COLLECTION_COLUMNS = ['Collection Media Condition', 'Collection Sleeve Condition', 'Collection Notes'];
+const COLLECTION_COLUMNS = DISCOGS_COLLECTION_COLUMNS.filter(c => c.startsWith('Collection '));
 
 const NOT_DISCOGS = 'This file is not a Discogs CSV export. Export it from Discogs (Collection or Wantlist → Export) ' +
   'and choose the .csv file without opening it in Excel first.';
@@ -109,7 +124,7 @@ const readDiscogsCsv = async (text: string, expected: DiscogsKind): Promise<Row[
 const convertRows = <T>(rows: Row[], convert: (get: Getter, row: Row) => T): DiscogsParseResult<T> => {
   const result: DiscogsParseResult<T> = { items: [], skippedNotVinyl: 0, invalid: 0 };
   rows.forEach(row => {
-    const get: Getter = column => String(row[column] ?? '').trim();
+    const get: Getter = column => restoreFormula(String(row[column] ?? '')).trim();
     if (!get('Artist') && !get('Title')) result.invalid++;
     else if (!isVinylFormat(get('Format'))) result.skippedNotVinyl++;
     else result.items.push(convert(get, row));
@@ -170,6 +185,51 @@ export const parseDiscogsCollection = async (text: string): Promise<DiscogsParse
 /** Wishlist items from a Discogs wantlist export (CSV text). Throws DiscogsFileError for any other file. */
 export const parseDiscogsWantlist = async (text: string): Promise<DiscogsParseResult<WishlistItem>> =>
   convertRows(await readDiscogsCsv(text, 'wantlist'), rowToWishlistItem);
+
+/** Out of 10 → 1–5 stars (7 → 4). Unrated stays empty, as Discogs writes it. */
+const ratingToStars = (rating: number): string =>
+  rating > 0 ? String(Math.min(5, Math.max(1, Math.round(rating / 2)))) : '';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+/** Date → "2026-08-08 07:58:58" (local time), as in the Discogs "Date Added" column. */
+const formatDateAdded = (value: Date): string => {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+
+const csvField = (value: string): string =>
+  /[",\r\n]/.test(value) || value !== value.trim() ? `"${value.replace(/"/g, '""')}"` : value;
+
+/**
+ * The collection as CSV, with the columns and order of the Discogs collection export.
+ * Only what Discogs has a column for is included (no genre, country, covers…).
+ */
+export const toDiscogsCsv = (records: VinylRecord[]): string => {
+  const rows = records.map(r => [
+    r.catNumber.join(', '),
+    r.artist,
+    r.album,
+    r.label.join(', '),
+    'Vinyl', // The app does not keep the exact format
+    ratingToStars(r.rating),
+    r.releaseYear ? String(r.releaseYear) : '0',
+    discogsReleaseId(r.discogsLink) ?? '',
+    r.collection || 'Uncategorized',
+    formatDateAdded(r.addedAt),
+    conditionToDiscogs(r.conditionMedia),
+    conditionToDiscogs(r.conditionSleeve),
+    r.comments,
+  ]);
+  const lines = [DISCOGS_COLLECTION_COLUMNS, ...rows].map(row => row.map(v => csvField(neutralizeFormula(v))).join(','));
+  // The BOM makes spreadsheets read the file as UTF-8, so accents show correctly.
+  return '﻿' + lines.join('\r\n') + '\r\n';
+};
+
+export const downloadDiscogsCsv = (records: VinylRecord[]): void => {
+  const dateStr = new Date().toISOString().split('T')[0];
+  downloadFile(toDiscogsCsv(records), 'text/csv;charset=utf-8', `vinyl-vault-discogs-${dateStr}.csv`);
+};
 
 interface Comparable { artist: string; album: string; discogsLink: string }
 

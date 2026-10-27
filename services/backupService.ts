@@ -3,6 +3,7 @@ import { VinylRecord, WishlistItem } from '../types';
 import { exportCollectionToExcel } from './excelService';
 import { confirmDialog, notify } from './notify';
 import { recordBackupDone } from './backupReminder';
+import { downloadFile } from './download';
 import { normalizePriority, parsePrice } from './wishlist';
 
 /**
@@ -41,18 +42,8 @@ export const exportFullBackup = async (): Promise<void> => {
     wishlist: wishlist,
   };
 
-  const jsonString = JSON.stringify(backup, null, 2);
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
   const dateStr = new Date().toISOString().split('T')[0];
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `vinyl-vault-backup-${dateStr}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadFile(JSON.stringify(backup, null, 2), 'application/json', `vinyl-vault-backup-${dateStr}.json`);
   recordBackupDone();
 
   notify(`Backup complete: ${records.length} records` +

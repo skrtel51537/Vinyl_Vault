@@ -6,7 +6,9 @@ import { VinylRecord } from '../types';
 import { exportFullBackup, importFullBackup } from '../services/backupService';
 import { confirmDialog, notify } from '../services/notify';
 import { describeBackupAge, getLastBackupDate, isBackupOverdue } from '../services/backupReminder';
-import { DiscogsFileError, DiscogsKind, parseDiscogsCollection, parseDiscogsWantlist, splitNewAndExisting } from '../services/discogsCsv';
+import {
+  discogsReleaseId, DiscogsFileError, DiscogsKind, downloadDiscogsCsv, parseDiscogsCollection, parseDiscogsWantlist, splitNewAndExisting,
+} from '../services/discogsCsv';
 import DiscogsImportPreview, { DiscogsImportSummary } from './DiscogsImportPreview';
 
 interface ImportViewProps {
@@ -191,6 +193,28 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onWishlistImp
     }
   };
 
+  const handleDiscogsExport = async () => {
+    const records = await db.vinyls.toArray();
+    if (records.length === 0) {
+      notify('No records to export.', 'info');
+      return;
+    }
+    const withoutLink = records.filter(r => !discogsReleaseId(r.discogsLink)).length;
+    const confirmed = await confirmDialog(
+      `${records.length} record${records.length === 1 ? '' : 's'} will be exported with the columns of the Discogs export: ` +
+      'artist, title, labels, catalog numbers, year, rating (as 1–5 stars), conditions, collection and comments.' +
+      '\n\nNot included: genre, country, sound quality, best tracks, "for sale", covers and the wishlist. ' +
+      'For a complete copy, use Full Backup.' +
+      (withoutLink > 0
+        ? `\n\n${withoutLink} record${withoutLink === 1 ? ' has' : 's have'} no Discogs release link: the release_id column stays empty.`
+        : ''),
+      { title: 'Export Discogs CSV?', confirmLabel: 'Export CSV' }
+    );
+    if (!confirmed) return;
+    downloadDiscogsCsv(records);
+    notify(`Exported ${records.length} record${records.length === 1 ? '' : 's'} as a Discogs CSV.`, 'success');
+  };
+
   const handleRestoreBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -296,15 +320,15 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onWishlistImp
         {/* Separator */}
         <div className="flex items-center gap-4">
           <div className="flex-1 h-px bg-stone-300"></div>
-          <span className="text-stone-400 text-sm font-medium">From Discogs</span>
+          <span className="text-stone-400 text-sm font-medium">Discogs CSV</span>
           <div className="flex-1 h-px bg-stone-300"></div>
         </div>
 
-        {/* Discogs CSV import: collection and wantlist are separate exports */}
+        {/* Discogs CSV: collection and wantlist are separate exports */}
         <div className="p-6 rounded-xl border border-stone-200 bg-stone-50">
           <p className="text-sm text-stone-600 mb-4">
-            Import the CSV files you export from Discogs. Records you already have are left untouched,
-            and you see what will be added before anything is saved.
+            Import the CSV files you export from Discogs, or export your collection in the same format.
+            Records you already have are left untouched, and you see what will be added before anything is saved.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <label className={fileButtonClass}>
@@ -317,6 +341,10 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onWishlistImp
               Discogs wantlist
               <input type="file" className="hidden" accept=".csv,text/csv" onChange={handleDiscogsFile('wantlist')} disabled={isProcessing} />
             </label>
+            <button onClick={handleDiscogsExport} disabled={isProcessing} className={`${fileButtonClass} disabled:opacity-50 disabled:cursor-not-allowed`}>
+              <Download className="w-5 h-5" />
+              Export Discogs CSV
+            </button>
           </div>
           <p className="text-xs text-stone-500 mt-3">Use the .csv file as downloaded: opening and saving it in Excel first can damage it.</p>
         </div>

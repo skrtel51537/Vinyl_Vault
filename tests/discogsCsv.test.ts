@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  conditionFromDiscogs, discogsReleaseId, DiscogsFileError, isVinylFormat, parseDiscogsCollection,
-  parseDiscogsWantlist, splitNewAndExisting, stripDiscogsSuffix,
+  conditionFromDiscogs, DISCOGS_COLLECTION_COLUMNS, discogsReleaseId, DiscogsFileError, isVinylFormat, parseDiscogsCollection,
+  parseDiscogsWantlist, splitNewAndExisting, stripDiscogsSuffix, toDiscogsCsv,
 } from '../services/discogsCsv';
 import { makeRecord } from './fixtures';
 
@@ -118,6 +118,50 @@ describe('helpers', () => {
     expect(discogsReleaseId('https://www.discogs.com/es/release/456')).toBe('456');
     expect(discogsReleaseId('https://www.discogs.com/master/789')).toBeNull();
     expect(discogsReleaseId('')).toBeNull();
+  });
+});
+
+describe('toDiscogsCsv', () => {
+  it('writes the Discogs columns, with a BOM, and reads back the same data', async () => {
+    const original = [
+      makeRecord({
+        artist: 'Crosby, Stills, Nash & Young', album: 'Déjà Vu', label: ['Atlantic', 'WEA'], catNumber: ['0602537', 'SD 7200'],
+        releaseYear: 1970, rating: 8, conditionMedia: 'NM', conditionSleeve: 'Generic', collection: 'Used',
+        comments: 'Gatefold, "textured"\nSecond line', discogsLink: 'https://www.discogs.com/es/release/42-Deja-Vu',
+        addedAt: new Date(2024, 4, 14, 18, 22, 11),
+      }),
+      makeRecord({ releaseYear: null, rating: 0, collection: '', discogsLink: '', comments: '' }),
+    ];
+    const text = toDiscogsCsv(original);
+
+    expect(text.startsWith('﻿' + DISCOGS_COLLECTION_COLUMNS.join(',') + '\r\n')).toBe(true);
+    const { items } = await parseDiscogsCollection(text);
+    const common = (r: (typeof original)[number]) => ({
+      artist: r.artist, album: r.album, label: r.label, catNumber: r.catNumber, releaseYear: r.releaseYear, rating: r.rating,
+      conditionMedia: r.conditionMedia, conditionSleeve: r.conditionSleeve, comments: r.comments,
+    });
+    expect(items.map(common)).toEqual(original.map(common));
+    expect(items[0]).toMatchObject({ collection: 'Used', discogsLink: 'https://www.discogs.com/release/42', addedAt: original[0].addedAt });
+    expect(items[1]).toMatchObject({ collection: 'Main', discogsLink: '' });
+  });
+
+  it('converts ratings to stars and conditions to Discogs grades', () => {
+    const [, row] = toDiscogsCsv([makeRecord({ rating: 7, conditionMedia: 'VG+', conditionSleeve: 'NM' })]).split('\r\n');
+    const values = row.split(',');
+    const column = (name: string) => values[DISCOGS_COLLECTION_COLUMNS.indexOf(name)];
+    expect(column('Rating')).toBe('4');
+    expect(column('Collection Media Condition')).toBe('Very Good Plus (VG+)');
+    expect(column('Collection Sleeve Condition')).toBe('Near Mint (NM or M-)');
+    expect(column('Format')).toBe('Vinyl');
+  });
+
+  it('keeps cells from running as spreadsheet formulas, and the import undoes it', async () => {
+    const text = toDiscogsCsv([makeRecord({ comments: '=HYPERLINK("http://x")', catNumber: ['-1'] })]);
+    expect(text).toContain(`"'=HYPERLINK(""http://x"")"`);
+    expect(text).toContain(`'-1`);
+    const { items: [r] } = await parseDiscogsCollection(text);
+    expect(r.comments).toBe('=HYPERLINK("http://x")');
+    expect(r.catNumber).toEqual(['-1']);
   });
 });
 
