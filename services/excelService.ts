@@ -1,5 +1,4 @@
 import { VinylRecord, WishlistItem } from '../types';
-import { normalizeMoods } from './moods';
 import { PRIORITY_LABELS, sortWishlist } from './wishlist';
 
 // xlsx is ~420 KB minified and only needed for Excel import/export, so it is loaded
@@ -48,9 +47,7 @@ export const parseExcelFile = async (file: File): Promise<VinylRecord[]> => {
             const key = Object.keys(row).find(k => k.toLowerCase().includes(keyPart.toLowerCase()));
             return key ? row[key] : undefined;
           };
-          // Optional column (added in 1.5.0); older spreadsheets simply don't have it.
-          const moods = normalizeMoods(getVal('Moods'));
-
+          // A "Moods" column (exported by 1.5.0) is simply ignored.
           return {
             artist: String(getVal('Artist') || 'Unknown Artist'),
             album: String(getVal('Album') || 'Unknown Album'),
@@ -68,7 +65,6 @@ export const parseExcelFile = async (file: File): Promise<VinylRecord[]> => {
             comments: String(getVal('Others/Comments') || ''),
             discogsLink: String(getVal('Discogs link') || ''),
             toBeSold: parseYesNo(getVal('To be sold')),
-            ...(moods.length > 0 ? { moods } : {}),
             addedAt: new Date(),
           };
         });
@@ -106,7 +102,6 @@ export const exportCollectionToExcel = async (records: VinylRecord[], wishlist: 
     'Others/Comments': r.comments,
     'Discogs link': r.discogsLink,
     'To be sold': r.toBeSold ? 'YES' : 'NO',
-    'Moods': (r.moods ?? []).join('; '),
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(excelRows);

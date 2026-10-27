@@ -222,7 +222,6 @@ const ImportView: React.FC<ImportViewProps> = ({ onImportComplete, onBack }) => 
         <div className="text-left text-xs text-stone-500 bg-stone-50 p-4 rounded-sm border border-stone-200 font-mono leading-relaxed">
           <p className="font-bold mb-2 text-stone-700 uppercase tracking-wide">Required Columns (Row 2):</p>
           <p>Artist, Album, Genre, Collection, Release Year, Country, Label, Cat. Number, Condition Sleeve, Condition Media, Sound Quality, Rating, Best tracks, Others/Comments, Discogs link, To be sold</p>
-          <p className="mt-2">Optional: Moods (Relax; Energy; Night; Party; Melancholy)</p>
         </div>
 
         {/* Separator */}

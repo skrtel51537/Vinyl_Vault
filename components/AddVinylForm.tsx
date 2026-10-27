@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Mood, VinylRecord } from '../types';
+import { VinylRecord } from '../types';
 import { db, moveWishlistItemToCollection } from '../services/db';
 import { notify } from '../services/notify';
 import { resizeImageFile, UPLOADED_COVER_SIZE } from '../services/image';
-import { autoMoods, MOODS } from '../services/moods';
 import { Save, X, PlusCircle, Edit, Upload, Image } from 'lucide-react';
 
 interface AddVinylFormProps {
@@ -48,15 +47,9 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
       ? (start.releaseYear === null ? '-' : start.releaseYear.toString())
       : new Date().getFullYear().toString()
   );
-  const [moods, setMoods] = useState<Mood[]>(initialValues?.moods ?? []);
 
   const splitList = (text: string) => text.split(';').map(s => s.trim()).filter(Boolean);
   const parseYear = (text: string) => (text === '-' || text.trim() === '') ? null : parseInt(text);
-  // What the picker will use while no mood is set by hand.
-  const guessedMoods = autoMoods({ genre: splitList(genreStr), releaseYear: parseYear(releaseYearStr) || null });
-
-  const toggleMood = (mood: Mood) =>
-    setMoods(prev => MOODS.filter(m => (m === mood) !== prev.includes(m)));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -120,8 +113,6 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
       discogsLink: formData.discogsLink || '',
       toBeSold: formData.toBeSold || false,
       coverUrl: formData.coverUrl,
-      // No manual moods: drop the field so they are guessed again.
-      moods: moods.length > 0 ? moods : undefined,
       // A new cover needs a new accent color (recomputed by the card).
       ...(initialValues && formData.coverUrl !== initialValues.coverUrl ? { dominantColor: undefined } : {}),
     } as VinylRecord;
@@ -287,30 +278,6 @@ const AddVinylForm: React.FC<AddVinylFormProps> = ({ onCancel, onSave, initialVa
             <label className={labelClass}>Comments</label>
             <textarea name="comments" rows={3} value={formData.comments} onChange={handleChange} className={inputClass} />
           </div>
-
-          <fieldset>
-            <legend className={labelClass}>Moods</legend>
-            <div className="flex flex-wrap gap-2">
-              {MOODS.map(m => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={moods.includes(m)}
-                  onClick={() => toggleMood(m)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${moods.includes(m)
-                    ? 'bg-amber-800 border-amber-800 text-white'
-                    : 'bg-paper border-stone-300 text-stone-600 hover:border-amber-500'}`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] text-stone-400 mt-1.5">
-              {moods.length > 0
-                ? 'Set by hand. Unselect them all to let the app guess from genre and decade.'
-                : `None selected: guessed from genre and decade (${guessedMoods.join(', ') || 'no match, only "Surprise me"'}).`}
-            </p>
-          </fieldset>
 
           <div className="flex items-center gap-3 p-4 border border-stone-200 rounded-sm bg-stone-50 w-max">
             <input type="checkbox" id="toBeSold" name="toBeSold" checked={formData.toBeSold} onChange={handleChange} className="w-5 h-5 accent-amber-600 rounded-sm cursor-pointer" />

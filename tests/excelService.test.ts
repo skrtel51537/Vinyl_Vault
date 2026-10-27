@@ -20,7 +20,7 @@ const sheetFile = (rows: Record<string, unknown>[]) => {
 };
 
 describe('parseExcelFile', () => {
-  it('maps the spreadsheet columns to records', async () => {
+  it('maps the spreadsheet columns to records (and ignores the 1.5.0 "Moods" column)', async () => {
     const [r] = await parseExcelFile(sheetFile([{
       'Artist': 'Pink Floyd', 'Album': 'Animals', 'Genre': 'Rock; Prog', 'Collection': 'Main',
       'Release Year': 1977, 'Country': 'UK', 'Label': 'Harvest / EMI', 'Cat. Number': 'SHVL 815; 11EMI',
@@ -33,8 +33,9 @@ describe('parseExcelFile', () => {
       artist: 'Pink Floyd', album: 'Animals', genre: ['Rock', 'Prog'], collection: 'Main', releaseYear: 1977,
       country: 'UK', label: ['Harvest', 'EMI'], catNumber: ['SHVL 815', '11EMI'], conditionSleeve: 'VG',
       conditionMedia: 'VG+', soundQuality: 4, rating: 9, bestTracks: ['Dogs', 'Sheep'], comments: 'Gatefold',
-      discogsLink: 'https://www.discogs.com/r/1', toBeSold: true, moods: ['Night', 'Party'],
+      discogsLink: 'https://www.discogs.com/r/1', toBeSold: true,
     });
+    expect(r).not.toHaveProperty('moods');
     expect(r.addedAt).toBeInstanceOf(Date);
   });
 
@@ -59,7 +60,7 @@ describe('parseExcelFile', () => {
 describe('exportCollectionToExcel', () => {
   it('writes the collection in a format parseExcelFile reads back', async () => {
     const original = [
-      makeRecord({ album: 'A', genre: ['Rock', 'Pop'], label: ['EMI', 'Harvest'], toBeSold: true, moods: ['Energy', 'Party'] }),
+      makeRecord({ album: 'A', genre: ['Rock', 'Pop'], label: ['EMI', 'Harvest'], toBeSold: true }),
       makeRecord({ album: 'B', releaseYear: null, bestTracks: [] }),
     ];
 
@@ -75,6 +76,7 @@ describe('exportCollectionToExcel', () => {
     const metadata = ({ id: _id, addedAt: _addedAt, coverUrl: _cover, dominantColor: _color, ...rest }: VinylRecord) => rest;
     expect(parsed.map(metadata)).toEqual(original.map(metadata));
     expect(workbook.SheetNames).toEqual(['Collection']);
+    expect(Object.keys(XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets['Collection'])[0])).not.toContain('Moods');
   });
 
   it('adds the wishlist on its own sheet, which import ignores', async () => {
