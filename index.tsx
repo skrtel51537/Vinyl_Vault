@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import Notifications from './components/Notifications';
 import ErrorBoundary from './components/ErrorBoundary';
+import UpdateBanner from './components/UpdateBanner';
+import { registerServiceWorker } from './services/pwa';
 
 // Self-hosted variable fonts: one file per family covers every weight in use,
 // so bold text renders with true bold glyphs instead of synthesized ones.
@@ -44,5 +46,9 @@ root.render(
       <App />
     </ErrorBoundary>
     <Notifications />
+    <UpdateBanner />
   </React.StrictMode>
 );
+
+// Offline support (GitHub Pages build only; does nothing on localhost).
+registerServiceWorker();
