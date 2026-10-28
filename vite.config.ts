@@ -86,6 +86,7 @@ const progressiveWebApp = (): Plugin => {
       const manifest = JSON.stringify(webManifest(), null, 2);
       this.emitFile({ type: 'asset', fileName: MANIFEST_FILE, source: manifest });
 
+      const template = readFileSync(new URL('./pwa/sw.template.js', import.meta.url), 'utf8');
       const files = [
         ...Object.values(bundle).map(item => ({
           name: item.fileName,
@@ -96,8 +97,9 @@ const progressiveWebApp = (): Plugin => {
           content: readFileSync(path.join(publicDir, file)),
         })),
         { name: MANIFEST_FILE, content: manifest },
+        // A change in the worker itself is a new version too (precacheList leaves it out).
+        { name: SERVICE_WORKER_FILE, content: template },
       ];
-      const template = readFileSync(new URL('./pwa/sw.template.js', import.meta.url), 'utf8');
       this.emitFile({
         type: 'asset',
         fileName: SERVICE_WORKER_FILE,

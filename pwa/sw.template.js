@@ -18,6 +18,9 @@ const COVER_CACHE = 'vinyl-vault-covers';
 const MAX_COVERS = 1500;
 
 const scoped = (file) => new URL(file, self.registration.scope).href;
+// Servers may answer "Vary: Origin", and the page's own requests carry an Origin header
+// the stored ones lack: match stored files by URL alone (each one is fixed per version).
+const BY_URL = { ignoreVary: true };
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -44,12 +47,12 @@ self.addEventListener('message', (event) => {
 
 const fromAppCache = async (request) => {
   const cache = await caches.open(APP_CACHE);
-  return (await cache.match(request)) || fetch(request);
+  return (await cache.match(request, BY_URL)) || fetch(request);
 };
 
 const serveApp = async () => {
   const cache = await caches.open(APP_CACHE);
-  return (await cache.match(scoped('index.html'))) || fetch(scoped('index.html'));
+  return (await cache.match(scoped('index.html'), BY_URL)) || fetch(scoped('index.html'));
 };
 
 const trimCovers = async (cache) => {
@@ -60,7 +63,7 @@ const trimCovers = async (cache) => {
 
 const serveCover = async (request) => {
   const cache = await caches.open(COVER_CACHE);
-  const cached = await cache.match(request.url);
+  const cached = await cache.match(request.url, BY_URL);
   if (cached) return cached;
   let response;
   try {
