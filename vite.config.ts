@@ -118,6 +118,8 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 3000,
       host: 'localhost',
+      // Never move to another port: the collection is stored per address (localhost:3000).
+      strictPort: true,
     },
     plugins: [react(), tailwindcss(), contentSecurityPolicy(), progressiveWebApp()],
     resolve: {
