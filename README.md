@@ -12,9 +12,25 @@ table, search and filter it, see statistics, and fetch album covers automaticall
   "listening room" theme.
 
 **Your data stays on your computer.** The collection is stored in the browser's
-IndexedDB for the address you open the app on (e.g. `http://localhost:3000`). There
-is no account, server or cloud sync. The only network requests go to the iTunes
-Search API, to look up album covers.
+IndexedDB for the address you open the app on. There is no account, server or cloud
+sync. Apart from loading the app itself, the only network requests go to Apple, to
+look up album covers and show them.
+
+## Use it online
+
+Open **https://skrtel51537.github.io/Vinyl_Vault/** and install it from the browser
+(the install icon in the address bar, or the browser menu). It then opens in its own
+window and works without a connection: the app is stored on your computer, and so
+are the Apple covers you have already seen. When a new version is published, the app
+shows "New version available" with an **Update** button.
+
+- Everyone who opens it gets their own, empty collection, stored in their own browser.
+  Start from a Discogs export (see below) or add records by hand.
+- If your browser deletes site data when it closes (some privacy settings do, e.g.
+  Brave's "Forget me when I close this site"), turn that off for the app, or the
+  collection is deleted every time.
+- To bring a collection from another address (such as `http://localhost:3000`), make
+  a **Full Backup** there and **Restore Backup** in the installed app.
 
 ## Requirements
 
@@ -35,13 +51,24 @@ Then open http://localhost:3000.
 | --- | --- |
 | `npm run dev` | Development server with hot reload on port 3000 |
 | `npm run build` | Production build into `dist/` |
+| `npm run build:pages` | Build for GitHub Pages: served from `/Vinyl_Vault/`, installable, works offline |
 | `npm run preview` | Serve the production build locally (port 4173) |
 | `npm test` | Run the automated tests (Vitest) |
 | `npm run typecheck` | Check TypeScript types |
 
 Note: `preview` serves on a different port than `dev`, and browsers keep a separate
-database per port. A collection added on port 3000 will not appear on port 4173.
-Use a backup to move it between them.
+database per address (and per port). A collection added on port 3000 will not appear
+on port 4173 or online. Use a backup to move it between them.
+
+Only `build:pages` includes the service worker (offline support), so `npm run dev`
+and local builds never cache anything on localhost.
+
+### Publishing
+
+Every push to `main` is published by the **Deploy to GitHub Pages** workflow
+(`.github/workflows/pages.yml`). It needs, once, *Settings → Pages → Source:
+GitHub Actions* in the repository. Do not rename the repository: the address would
+change, and the app would open empty there.
 
 ## Importing from Excel
 

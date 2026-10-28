@@ -1,0 +1,66 @@
+name: Deploy to GitHub Pages
+
+# Publishes the installable app at https://skrtel51537.github.io/Vinyl_Vault/.
+# main only receives release merges, so every push to main is a release. (A tag
+# trigger would also need a tag rule in the github-pages environment settings.)
+on:
+  push:
+    branches: [main]
+  # Allows a manual redeploy from the Actions tab.
+  workflow_dispatch:
+
+# One deployment at a time; a newer one waits instead of cancelling one in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Never publish a version that fails its checks.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build for GitHub Pages
+        run: npm run build:pages
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -10,6 +10,7 @@ export default defineConfig({
   },
   define: {
     __APP_VERSION__: JSON.stringify('test'),
+    __SERVICE_WORKER_URL__: JSON.stringify(''),
   },
   test: {
     // jsdom provides File, FileReader, Blob and document for the import/export code;
