@@ -34,3 +34,10 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # The GitHub Pages build (installable app with offline support) must build too.
+      - name: Build for GitHub Pages
+        run: |
+          npm run build:pages
+          test -f dist/sw.js
+          test -f dist/manifest.webmanifest
